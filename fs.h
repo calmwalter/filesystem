@@ -1,12 +1,17 @@
 /*
   all right reserved 2019 calmwalter
 
-
+-------------------------------------------------------------
   we define the file structure like this:
   /dev/disk_name/files or directory/..../files or directory
-
   /dev is the root
   /disk_name is the name of the disk
+--------------------------------------------------------------
+  and I construct the disk like this:
+  +-------------------------------------------+
+  | super block | block table | inode | block |
+  +-------------------------------------------+
+
  */
 
 #ifndef FS_H
@@ -23,6 +28,18 @@
 //define number of direct pointer point to the data
 #define NUMBER_DIRECT_POINTER 5
 
+//define the size, unit byte
+//define inode size
+#define SIZE_INODE 76
+//define block size
+#define SIZE_BLOCK 1024
+//define superblock size
+#define SIZE_SUPERBLOCK 16
+//define table size of each unit
+#define SIZE_TABLE_UNIT 4
+
+//define error
+#define DISK_NAME_EXIST_ERROR "ERROR: DISK NAME ALREADY EXISTS"
 
 //store the main infomation of the disk
 typedef struct superblock{
@@ -50,12 +67,14 @@ typedef struct disk{
   char* disk_name;//the name of the disk
   superblock* sb;//the superblock infomation of the disk
   inode* inodes;//the inodes in the disk
+  int* block_table;//record the validation of the block and 
 }disk;
 
 typedef struct filesystem
 {
   //attributes of filesystem
   disk** disks;//dynamicly store the mounted disk
+  int number_disk;//number of disk that is mounted
   int current_directory;//current directory number
   int current_disk;//the disk we current use
   int buffer_inode,buffer_disk;//buffer_inode point to the inode number,buffer_disk point to the disk number
@@ -75,7 +94,7 @@ typedef struct filesystem
   //operation to manage disk
   int (*mount)(char*,struct filesystem*);//mount the disk(disk_name)
   int (*unmount)(char*,struct filesystem*);//unmount the disk(disk_name)
-  int (*create)(char*,int,struct filesystem*);//create the disk(disk_name,size)
+  int (*create)(char*,int);//create the disk(disk_name,size)
   int (*format)(char*,struct filesystem*);//format the disk(disk_name)
   int (*delete)(char*,struct filesystem*);//delete the disk(disk_name)
 
@@ -97,7 +116,7 @@ int cd(char* path,filesystem* fs);
 
 int mount(char* disk_name,filesystem* fs);
 int unmount(char* disk_name,filesystem* fs);
-int create(char* disk_name,int size,filesystem* fs);
+int create(char* disk_name,int size);
 int format(char* disk_name,filesystem* fs);
 int delete(char* disk_name,filesystem* fs);
 

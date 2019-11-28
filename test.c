@@ -1,4 +1,3 @@
-
 #include"fs.h"
 #include<stdio.h>
 
@@ -10,16 +9,30 @@ int main(){
   sb.inode_number=100;
   sb.block_number=100;
   sb.block_size=100;
-  printf("size of superblock:%d\n",sizeof(sb));
+  printf("size of superblock: %d bytes\n",sizeof(sb));
 
+  inode node;
+  node.number=12345;
+  printf("size of inode: %d bytes\n",sizeof node);
+  
   FILE *fp = fopen("test","wb");
   fwrite(&sb,sizeof sb,1,fp);
+  fwrite(&node,sizeof node,1,fp);
   fclose(fp);
   
   superblock sb1;
+  inode node1;
   fp = fopen("test","rb");
   fread(&sb1,sizeof sb1,1,fp);
+  fread(&node1,sizeof node1,1,fp);
   fclose(fp);
-  printf("%d",sb1.inode_size);
+  printf("%d\n",sb1.inode_size);
+  printf("%d\n",node1.number);
+
+  fp = fopen("hello","w");
+  if(!fp) printf("hello not exist\n");
+
+  create("hello",1024*1024*128);
+  
   return 0;
 }
