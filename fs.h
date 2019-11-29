@@ -40,13 +40,19 @@
 
 //define error
 #define DISK_NAME_EXIST_ERROR "ERROR: DISK NAME ALREADY EXISTS"
+#define DISK_ALREADY_MOUNT_ERROR "ERROR: DISK ALREADY MOUNTED"
+#define DISK_NOT_EXIST_ERROR "ERROR: DISK NOT EXISTS"
+#define MEMORY_ALLOCATION_FAIL_ERROR "ERROR: MEMORY ALLOCATION FAILED"
+#define DISK_SUPERBLOCK_READ_FAIL_ERROR "ERROR: READ DISK SUPERBLOCK FAILED"
+#define DISK_BLOCK_TABLE_READ_FAIL_ERROR "ERROR: READ DISK BLOCK TABLE FAILED"
+#define DISK_INODE_READ_FAIL_ERROR "ERROR: READ DISk INODE FAILED"
 
 //store the main infomation of the disk
 typedef struct superblock{
-  int inode_size;//the size of the file system
-  int inode_number;
-  int block_size;
-  int block_number;
+  int inode_size;//total used inode size
+  int inode_number;//number of inodes
+  int block_size;//total used block size
+  int block_number;//number of blocks
 }superblock;
 
 //store the file infomation
@@ -63,17 +69,17 @@ typedef struct inode{
 
 //the disk that store the disk infomation:name,superblock,inode,and the next disk link
 typedef struct disk{
-  int number;
   char* disk_name;//the name of the disk
   superblock* sb;//the superblock infomation of the disk
   inode* inodes;//the inodes in the disk
-  int* block_table;//record the validation of the block and 
+  int* block_table;//record the validation of the block and
+  struct disk* next_disk;// next linked disk
 }disk;
 
 typedef struct filesystem
 {
   //attributes of filesystem
-  disk** disks;//dynamicly store the mounted disk
+  disk* disks;//dynamicly store the mounted disk using linked list
   int number_disk;//number of disk that is mounted
   int current_directory;//current directory number
   int current_disk;//the disk we current use

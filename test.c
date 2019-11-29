@@ -33,6 +33,17 @@ int main(){
   if(!fp) printf("hello not exist\n");
 
   create("hello",1024*1024*128);
-  
+  if(-1){
+    printf("hello\n");
+  }
+  if(3){
+    printf("hello1\n");
+  }
+  int* a;
+  char* b;
+  double* c;
+  printf("sizeof pointer: %d %d %d\n",sizeof a,sizeof b,sizeof c);
+  printf("%d\n", sizeof(struct disk));
+  printf("sizeof int: %d\n",sizeof int);
   return 0;
 }
