@@ -2,8 +2,7 @@
 #include<stdio.h>
 
 
-
-int main(){
+int main(int argc, char **argv){
   /*
   printf("sizeof int: %d\n",sizeof(int));
   printf("sizeof char: %d\n",sizeof(char));
@@ -48,5 +47,11 @@ int main(){
   init(&fs);
   fs.create("hello", 1024*1024*128);
   fs.mount("hello", &fs);
+  //fs.list_disks(&fs);
+  //fs.unmount("hello",&fs);
+  //fs.list_disks(&fs);
+  //fs.format("hello",&fs);
+  //fs.delete("hello",&fs);
+  fs.cd("hello",&fs);
   return 0;
 }
