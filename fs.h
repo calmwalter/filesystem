@@ -30,13 +30,18 @@
 
 //define the size, unit byte
 //define inode size
-#define SIZE_INODE 76
+#define SIZE_INODE 72
 //define block size
 #define SIZE_BLOCK 1024
 //define superblock size
 #define SIZE_SUPERBLOCK 16
 //define table size of each unit
 #define SIZE_TABLE_UNIT 4
+
+//define value operation for directory file pointer table
+#define END_BLOCK -1
+#define NEXT_BLOCK -2
+#define BLOCK_POSITION_NULL -3
 
 //define error
 #define DISK_NAME_EXIST_ERROR "ERROR: DISK NAME ALREADY EXISTS"
@@ -46,6 +51,14 @@
 #define DISK_SUPERBLOCK_READ_FAIL_ERROR "ERROR: READ DISK SUPERBLOCK FAILED"
 #define DISK_BLOCK_TABLE_READ_FAIL_ERROR "ERROR: READ DISK BLOCK TABLE FAILED"
 #define DISK_INODE_READ_FAIL_ERROR "ERROR: READ DISk INODE FAILED"
+#define DISK_NOT_MOUNT_ERROR "ERROR: DISK NOT MOUNTED"
+#define NO_DISK_MOUNT_ERROR "ERROR: NO DISK MOUNTED"
+#define DISK_NAME_NOT_FOUND_ERROR "ERROR: DISK NAME NOT FOUND"
+#define DELETE_DISK_FAIL_ERROR "ERROR: DELETE DISK FAILED"
+#define PATH_NOT_FOUND_ERROR "ERROR: PATH NOT FOUND"
+#define NAME_ALREADY_EXIST_ERROR "ERROR: NAME ALREADY EXISTS"
+#define NO_ENOUGH_INDOE_SPACE_ERROR "ERROR: NO ENOUGH INDOE SPACE"
+#define NO_ENOGH_BLOCK_SPEACE_ERROR "ERROR: NO ENOUGH BLOCK SPACE"
 
 //store the main infomation of the disk
 typedef struct superblock{
@@ -57,14 +70,14 @@ typedef struct superblock{
 
 //store the file infomation
 typedef struct inode{
-  int number;//the number of the inode, we use this to find the value of the file
+  //int number;//the number of the inode, we use this to find the value of the file
   int parent_directory;//pointer point to the parent directory inode
   char name[30];//name of the file
   int type;//type of the file
   int size;//size of the data
   int valid;//if the block has been used
-  int direct[NUMBER_DIRECT_POINTER];//pointer point to the data directly
-  int indirect;//point to block where store the pointer point to the data
+  int direct[NUMBER_DIRECT_POINTER];//pointer point to the data(file) or inode(directory) directly
+  int indirect;//point to block where store the pointer point to the data or inode, end with -1, end with -2, read one more for next block.
 }inode;
 
 //the disk that store the disk infomation:name,superblock,inode,and the next disk link
@@ -82,19 +95,19 @@ typedef struct filesystem
   disk* disks;//dynamicly store the mounted disk using linked list
   int number_disk;//number of disk that is mounted
   int current_directory;//current directory number
-  int current_disk;//the disk we current use
-  int buffer_inode,buffer_disk;//buffer_inode point to the inode number,buffer_disk point to the disk number
+  disk* current_disk;//the disk we current use
+  int buffer_inode;disk* buffer_disk;//buffer_inode point to the inode number,buffer_disk point to the disk number
   
   //operation to access disk
   int (*write)(char*,char*,struct filesystem*);//write to the file(file_path,content)
   int (*read)(char*,struct filesystem*);//read the file(file_path)
-  int (*ls)(char*,struct filesystem*);//list the files and directories in current directory(file_path)
+  void (*ls)(struct filesystem*);//list the files and directories in current directory(file_path)
   int (*cp)(char*,struct filesystem*);//copy a file, put it to the buffer(file_path)
   int (*paste)(struct filesystem*);//paste the file in buffer to current directory
   int (*rm)(char*,struct filesystem*);//rm the file(file_path)
   int (*mv)(char*,char *,struct filesystem*);//move a file to another place(file_path,dest_file_path)
   int (*mkdir)(char*,struct filesystem*);//make a directory in current directory(directory_name)
-  int (*find)(char*,struct filesystem*);//find the file or directory under current directory or child directory recursively(file or directory name)
+  void (*find)(char*,int,struct filesystem*);//find the file or directory under current directory or child directory recursively(file or directory name)
   int (*cd)(char*,struct filesystem*);//go to the directory
   
   //operation to manage disk
@@ -110,13 +123,13 @@ typedef struct filesystem
 
 int write(char* file_path,char* content,filesystem* fs);
 int read(char* file_path,filesystem* fs);
-int ls(char* file_path,filesystem* fs);
+void ls(filesystem* fs);
 int cp(char* file_path,filesystem* fs);
 int paste(filesystem* fs);
 int rm(char* file_path,filesystem* fs);
 int mv(char* file_path, char* dest_file_path,filesystem* fs);
 int mkdir(char* directory_name,filesystem* fs);
-int find(char* name,filesystem* fs);
+void find(char* name, int cur_dir,filesystem* fs);
 int cd(char* path,filesystem* fs);
 
 
@@ -130,4 +143,25 @@ int delete(char* disk_name,filesystem* fs);
 int init(filesystem* fs);
 
 
+//tools
+disk* find_disk(char* disk_name, filesystem* fs);
+int find_aim(int cur_dir, char* aim_name, disk* di);
+int find_dir(int cur_dir,char* aim_dir_name,disk* di);
+
+typedef struct path_list{
+  char** list;
+  int len;
+}path_list;
+path_list* get_path_list(char* path);//remember to release the pointer
+
+typedef struct position{
+  disk* di;
+  int position;
+}position;
+position* search_position(path_list* pl, filesystem* fs);
+//set the node state, -1 represent end,FALSE, -2 represent NEXT_BLOCK, -3 represent NULL pointer
+void set_inode_pointer(int cur_value, int set_value, int position, disk* di);
+
+void write_inode_to_disk(disk* di,int position);
+int write_file_to_disk(disk* di,inode* in);
 #endif

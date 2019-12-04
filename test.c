@@ -12,7 +12,8 @@ int main(){
   printf("size of superblock: %d bytes\n",sizeof(sb));
 
   inode node;
-  node.number=12345;
+  //node.number=12345;
+  node.type = TYPE_FILE;
   printf("size of inode: %d bytes\n",sizeof node);
   
   FILE *fp = fopen("test","wb");
@@ -27,7 +28,7 @@ int main(){
   fread(&node1,sizeof node1,1,fp);
   fclose(fp);
   printf("%d\n",sb1.inode_size);
-  printf("%d\n",node1.number);
+  printf("%d\n",node1.type);
 
   fp = fopen("hello","w");
   if(!fp) printf("hello not exist\n");
@@ -44,6 +45,6 @@ int main(){
   double* c;
   printf("sizeof pointer: %d %d %d\n",sizeof a,sizeof b,sizeof c);
   printf("%d\n", sizeof(struct disk));
-  printf("sizeof int: %d\n",sizeof int);
+  printf("sizeof int: %d\n",sizeof(int));
   return 0;
 }
