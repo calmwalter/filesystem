@@ -116,7 +116,7 @@ typedef struct filesystem
   int (*create)(char*,int);//create the disk(disk_name,size)
   int (*format)(char*,struct filesystem*);//format the disk(disk_name)
   int (*delete)(char*,struct filesystem*);//delete the disk(disk_name)
-
+  void (*list_disks)(struct filesystem*);//list disks
   //init the file system
   int (*init)(struct filesystem*);//init the file system
 }filesystem;
@@ -138,7 +138,7 @@ int unmount(char* disk_name,filesystem* fs);
 int create(char* disk_name,int size);
 int format(char* disk_name,filesystem* fs);
 int delete(char* disk_name,filesystem* fs);
-
+void list_disks(struct filesystem* fs);
 
 int init(filesystem* fs);
 
