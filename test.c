@@ -4,6 +4,7 @@
 
 
 int main(){
+  /*
   printf("sizeof int: %d\n",sizeof(int));
   printf("sizeof char: %d\n",sizeof(char));
   printf("sizeof int*: %d\n",sizeof(int*));
@@ -38,5 +39,14 @@ int main(){
 
   create("hello",1024*1024*128);
   printf("%d\n",sizeof(char));
+  */
+  
+  ////////////////////////////////////
+
+  //test filesystem
+  filesystem fs;
+  init(&fs);
+  fs.create("hello", 1024*1024*128);
+  fs.mount("hello", &fs);
   return 0;
 }

@@ -786,7 +786,7 @@ int create(char* disk_name,int size){
     fwrite(&valid, sizeof(valid), 1, fp);
   }
   
-  printf("pointer at:%ld\n",ftell(fp));
+  
   node.type = TYPE_DIRECTORY;//first node is the root directory
   node.valid = TRUE;//first directory must be valid when the disk is created
   
