@@ -571,12 +571,13 @@ void find(char* name,int cur_dir,filesystem* fs){
 
 disk* find_disk(char* disk_name,filesystem* fs){
   disk* di = fs->disks;
-  while(di->next_disk){
+  while(di){
     if(!strcmp(di->disk_name, disk_name)){
-      break;
+      return di;
     }
+    di = di->next_disk;
   }
-  return di;
+  return NULL;
 }
 
 int find_dir(int cur_dir,char* aim_dir_name,disk* di){
@@ -624,10 +625,13 @@ int find_dir(int cur_dir,char* aim_dir_name,disk* di){
   return -1;
 }
 
+
 int cd(char* path,filesystem* fs){
   //first get list
   path_list* pl = get_path_list(path);
-  
+  for(int i=0;i<pl->len;i++){
+    printf("%s",*(pl->list+i));
+  }
   //find the directory
   position* pos = search_position(pl, fs);
   if((pos->di->inodes+pos->position)->type != TYPE_DIRECTORY){
@@ -639,26 +643,31 @@ int cd(char* path,filesystem* fs){
   return TRUE;
 }
 
+
 int mount(char* disk_name,filesystem* fs){
   /*
     mount the disk to the file system
   */
   //check if the disk exists
-  if(!fopen(disk_name,"r")){
+  FILE *fp;
+  fp = fopen(disk_name,"r");
+  if(!fp){
     printf("%s\n",DISK_NOT_EXIST_ERROR);
     return FALSE;
   }
+  fclose(fp);
   //check if the disk already mounted
   
   disk* dp = fs->disks;
-  while(!dp->next_disk){
+  while(dp){
     if(!strcmp(dp->disk_name,disk_name)){
       printf("%s\n",DISK_ALREADY_MOUNT_ERROR);
       return FALSE;
     }
+    dp = dp->next_disk;
   }
 
-  FILE *fp;//file pointer to read data from the disk
+  //file pointer to read data from the disk
   
   //allocate super block memory
   superblock* sb;
@@ -721,6 +730,8 @@ void free_disk(disk* dp){
   free(dp->inodes);
   free(dp);
 }
+
+
 int unmount(char* disk_name,filesystem* fs){
   //free all dynamic memory
   if(!fs->disks){
@@ -729,20 +740,23 @@ int unmount(char* disk_name,filesystem* fs){
   }
   disk* dp = fs->disks;
   disk* dpt=NULL;
-  while(dp->next_disk){
+  while(dp){
     if(!strcmp(dp->disk_name,disk_name)){
       if(!dpt){
-	fs->disks=dp->next_disk;
+	      fs->disks=dp->next_disk;
       }else{
-	dpt->next_disk = dp->next_disk;
+	      dpt->next_disk = dp->next_disk;
       }
       free_disk(dp);
       return TRUE;
     }
+    dpt = dp;
+    dp = dp->next_disk;
   }
   printf("%s\n",DISK_NAME_NOT_FOUND_ERROR);
   return FALSE;
 }
+
 
 //TODO: rewrite this part
 int create(char* disk_name,int size){
@@ -759,9 +773,10 @@ int create(char* disk_name,int size){
     = size - superblock_size - inode_number * SIZE_INODE
     --->block_number = (size - superblock_size - inode_number * SIZE_INODE)/(SIZE_BLOCK+SIZE_TABLE_UNIT) 
   */
+
   int inode_number = size/100/SIZE_INODE;
   int block_number = (size-SIZE_SUPERBLOCK-inode_number*SIZE_INODE)/(SIZE_BLOCK+SIZE_TABLE_UNIT);
-  printf("inode number:%d\t\tblock number:%d\n",inode_number,block_number);
+  //printf("inode number:%d\tblock number:%d\n",inode_number,block_number);
 
   //initialize the superblock
   superblock sb;
@@ -775,8 +790,10 @@ int create(char* disk_name,int size){
   
   //write superblock,block table,inode,block to the file
   FILE *fp;
-  if(fopen(disk_name,"r")){
+  fp = fopen(disk_name,"r");
+  if(fp){
     printf("%s\n",DISK_NAME_EXIST_ERROR);
+    fclose(fp);
     return FALSE;
   }
   fp = fopen(disk_name,"wb");
@@ -813,16 +830,27 @@ int create(char* disk_name,int size){
   return TRUE;
   
 }
+
+
 int format(char* disk_name,filesystem* fs){
   disk* di = find_disk(disk_name, fs);
-  delete(disk_name, fs);
+  if(!di){
+    printf("%s\n",DISK_NOT_MOUNT_ERROR);
+    return FALSE;
+  }
   int size = di->sb->block_number*SIZE_BLOCK+
     di->sb->inode_number*(SIZE_INODE+SIZE_TABLE_UNIT)+
     SIZE_SUPERBLOCK;
-  create(disk_name,size);
+  if(!delete(disk_name, fs)){
+    return FALSE;
+  }
+  if(!create(disk_name,size)){
+    return FALSE;
+  }
   printf("format disk %s success\n",disk_name);
   return TRUE;
 }
+
 
 int delete(char* disk_name,filesystem* fs){
   if(find_disk(disk_name, fs)){
@@ -831,7 +859,7 @@ int delete(char* disk_name,filesystem* fs){
   
   int rc = remove(disk_name);
   if(rc){
-    printf("%s",DELETE_DISK_FAIL_ERROR);
+    printf("%s\n",DELETE_DISK_FAIL_ERROR);
     return FALSE;
   }
   printf("delete disk %s success\n",disk_name);
@@ -864,9 +892,18 @@ int init(filesystem* fs){
     fs->create = create;
     fs->format = format;
     fs->delete = delete;
-  
+    fs->list_disks = list_disks;
+
     fs->init = init;
     return TRUE;
   }
 
+void list_disks(filesystem* fs){
+  disk* di = fs->disks;
+  while(di){
+    printf("%s\t",di->disk_name);
+    di = di->next_disk;
+  }
+  printf("\n");
 
+}
