@@ -4,6 +4,11 @@
 
 
 int main(){
+  printf("sizeof int: %d\n",sizeof(int));
+  printf("sizeof char: %d\n",sizeof(char));
+  printf("sizeof int*: %d\n",sizeof(int*));
+  printf("sizeof char*: %d\n",sizeof(char*));
+  
   superblock sb;
   sb.inode_size=100;
   sb.inode_number=100;
@@ -14,11 +19,11 @@ int main(){
   inode node;
   //node.number=12345;
   node.type = TYPE_FILE;
-  printf("size of inode: %d bytes\n",sizeof node);
+  printf("size of inode: %d bytes\n",sizeof(node));
   
   FILE *fp = fopen("test","wb");
   fwrite(&sb,sizeof sb,1,fp);
-  fwrite(&node,sizeof node,1,fp);
+  fwrite(&node,sizeof node,10000,fp);
   fclose(fp);
   
   superblock sb1;
@@ -27,24 +32,11 @@ int main(){
   fread(&sb1,sizeof sb1,1,fp);
   fread(&node1,sizeof node1,1,fp);
   fclose(fp);
+  
   printf("%d\n",sb1.inode_size);
   printf("%d\n",node1.type);
 
-  fp = fopen("hello","w");
-  if(!fp) printf("hello not exist\n");
-
   create("hello",1024*1024*128);
-  if(-1){
-    printf("hello\n");
-  }
-  if(3){
-    printf("hello1\n");
-  }
-  int* a;
-  char* b;
-  double* c;
-  printf("sizeof pointer: %d %d %d\n",sizeof a,sizeof b,sizeof c);
-  printf("%d\n", sizeof(struct disk));
-  printf("sizeof int: %d\n",sizeof(int));
+  printf("%d\n",sizeof(char));
   return 0;
 }

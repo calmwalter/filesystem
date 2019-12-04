@@ -761,7 +761,8 @@ int create(char* disk_name,int size){
   */
   int inode_number = size/100/SIZE_INODE;
   int block_number = (size-SIZE_SUPERBLOCK-inode_number*SIZE_INODE)/(SIZE_BLOCK+SIZE_TABLE_UNIT);
- 
+  printf("inode number:%d\t\tblock number:%d\n",inode_number,block_number);
+
   //initialize the superblock
   superblock sb;
   sb.inode_size = 0;
@@ -781,18 +782,33 @@ int create(char* disk_name,int size){
   fp = fopen(disk_name,"wb");
   fwrite(&sb,sizeof(sb),1,fp);
   int valid = FALSE;
-  fwrite(&valid, sizeof(int), block_number, fp);
+  for(int i=0;i<block_number;i++){
+    fwrite(&valid, sizeof(valid), 1, fp);
+  }
+  
+  printf("pointer at:%ld\n",ftell(fp));
   node.type = TYPE_DIRECTORY;//first node is the root directory
   node.valid = TRUE;//first directory must be valid when the disk is created
+  
   fwrite(&node,sizeof(node),1,fp);
+  
   node.valid = FALSE;
-  fwrite(&node,sizeof(node),inode_number-1,fp);
-  fseek(fp,block_number*SIZE_BLOCK,SEEK_CUR);
+  for(int i=0;i<inode_number-1;i++){
+    fwrite(&node,sizeof(node),1,fp);
+  }
+  fseek(fp,block_number*SIZE_BLOCK-1,SEEK_CUR);
+  fputc(32, fp);
+  
   fclose(fp);
-  printf("create disk success\ntotal size: %d bytes\n",
-	 SIZE_SUPERBLOCK+
-	 SIZE_INODE*inode_number+
-	 block_number*(SIZE_BLOCK+SIZE_TABLE_UNIT));
+  long total_size = SIZE_SUPERBLOCK+
+    SIZE_INODE*inode_number+
+    block_number*(SIZE_BLOCK+SIZE_TABLE_UNIT);
+  
+  printf("create disk success\ntotal size: %ldbytes = %.1lfKB = %.1lfMB\n",
+	 total_size,
+	 (double)total_size/1024,
+	 (double)total_size/1024/1024
+	 );
   
   return TRUE;
   
