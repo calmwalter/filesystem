@@ -9,3 +9,5 @@ hello
 *.pdb
 fs.ilk
 test.ilk
+node_modules
+package-lock.json
