@@ -45,13 +45,13 @@ int main(int argc, char **argv){
   //test filesystem
   filesystem fs;
   init(&fs);
-  fs.create("hello", 1024*1024*128);
+  //fs.create("hello", 1024*1024*128);
   fs.mount("hello", &fs);
   //fs.list_disks(&fs);
   //fs.unmount("hello",&fs);
   //fs.list_disks(&fs);
   //fs.format("hello",&fs);
   //fs.delete("hello",&fs);
-  fs.cd("hello",&fs);
+  fs.cd("/dev/hello",&fs);
   return 0;
 }

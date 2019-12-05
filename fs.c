@@ -92,19 +92,18 @@ int find_aim(int cur_dir,char* aim_name,disk* di){
 
 path_list* get_path_list(char* path){
   //first get list
-  char** dl;//directory list from path
+  char** dl=NULL;//directory list from path
   int dl_len=0;//len of dl
   int len = strlen(path);//len of path
-  int markl=0;
+  int markl=-1;
   int i=0;
   if(path[0]=='/'){
-    //markl++;
+    markl++;
     i++;
   }
-  
+  char** pt=NULL;
   for(;i<len;i++){
     if(path[i]=='/'){
-      char** pt;
       while(!(pt=(char**)realloc(dl, sizeof(char*)*(dl_len+1))));
       dl = pt;
       while(!(*(dl+dl_len) = (char*)malloc(sizeof(char)*(i-markl-1))));
@@ -114,7 +113,6 @@ path_list* get_path_list(char* path){
     }
   }
   if(path[len-1]!='/'){
-    char** pt;
     while(!(pt=(char**)realloc(dl, sizeof(char*)*(dl_len+1))));
     dl = pt;
     while(!(*(dl+dl_len) = (char*)malloc(sizeof(char)*(i-markl-1))));
@@ -629,9 +627,7 @@ int find_dir(int cur_dir,char* aim_dir_name,disk* di){
 int cd(char* path,filesystem* fs){
   //first get list
   path_list* pl = get_path_list(path);
-  for(int i=0;i<pl->len;i++){
-    printf("%s",*(pl->list+i));
-  }
+
   //find the directory
   position* pos = search_position(pl, fs);
   if((pos->di->inodes+pos->position)->type != TYPE_DIRECTORY){

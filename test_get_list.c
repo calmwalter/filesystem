@@ -12,12 +12,13 @@ path_list* get_path_list(char* path){
   char** dl;//directory list from path
   int dl_len=0;//len of dl
   int len = strlen(path);//len of path
-  int markl=0;
+  int markl=-1;
   int i=0;
   if(path[0]=='/'){
-    //markl++;
+    markl++;
     i++;
   }
+  
   
   for(;i<len;i++){
     if(path[i]=='/'){
@@ -45,7 +46,7 @@ path_list* get_path_list(char* path){
 }
 
 int main(){
-  char path[100] = "/dev/sda/diska/hello/http/halo";
+  char path[100] = "halo";
   /*
   //first get list
   char** dl;//directory list from path
