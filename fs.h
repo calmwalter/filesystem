@@ -3,8 +3,8 @@
 
 -------------------------------------------------------------
   we define the file structure like this:
-  /dev/disk_name/files or directory/..../files or directory
-  /dev is the root
+  /disk_name/files or directory/..../files or directory
+  first / is the root
   /disk_name is the name of the disk
 --------------------------------------------------------------
   and I construct the disk like this:
@@ -153,6 +153,7 @@ typedef struct path_list{
   int len;
 }path_list;
 path_list* get_path_list(char* path);//remember to release the pointer
+char* get_path(disk* di, int pos);//get the path of the position
 
 typedef struct position{
   disk* di;
