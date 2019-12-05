@@ -45,13 +45,27 @@ int main(int argc, char **argv){
   //test filesystem
   filesystem fs;
   init(&fs);
-  //fs.create("hello", 1024*1024*128);
+  fs.create("hello", 1024*1024*128);
   fs.mount("hello", &fs);
   //fs.list_disks(&fs);
   //fs.unmount("hello",&fs);
   //fs.list_disks(&fs);
   //fs.format("hello",&fs);
   //fs.delete("hello",&fs);
-  fs.cd("/dev/hello",&fs);
+  fs.cd("/hello",&fs);
+  printf("%d\n",fs.current_directory);
+  fs.mkdir("halo",&fs);
+  fs.mkdir("yolo",&fs);
+  fs.mkdir("champion",&fs);
+  fs.mkdir("cascadia",&fs);
+  fs.mkdir("calm",&fs);
+  fs.mkdir("walter",&fs);
+  fs.cd("/hello/calm",&fs);
+  fs.mkdir("walter",&fs);
+  fs.mkdir("sam",&fs);
+  fs.mkdir("kola",&fs);
+  printf("%d\n",fs.current_directory);
+  printf("%s\n",get_path(fs.current_disk,fs.current_directory));
+  fs.ls(&fs);
   return 0;
 }
