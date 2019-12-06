@@ -3,8 +3,176 @@
 #include<stdlib.h>
 #include"fs.h"
 
-//int write(char* file_path,char* content,filesystem* fs){}
-//int read(char* file_path,filesystem* fs){}
+
+void update_size(int size, int pos, disk* di){
+  inode* in = di->inodes + pos;
+  in->size+=size;
+  write_inode_to_disk(di, pos);
+  if(in->parent_directory!=-1){
+    update_size(size, in->parent_directory, di);
+  }
+}
+int write(char* file_name,char* content,filesystem* fs){
+  //if at the root directory, we return FALSE
+  if(!fs->current_disk && fs->current_directory==-1){
+    printf("CAN'T WRITE FILE AT THE ROOT DIRECTORY\n");
+    return FALSE;
+  }
+  
+  //find if the file already exist
+  int aim = find_aim(fs->current_directory, file_name, fs->current_disk);
+  if(aim==-1){
+    printf("%s\n",NAME_ALREADY_EXIST_ERROR);
+    return FALSE;
+  }
+  
+  //calculate the size of the content
+  int content_len = strlen(content);
+  
+  //define variables
+  disk* di = fs->current_disk;
+  int cur_dir = fs->current_directory;
+  inode* inodes = di->inodes;
+
+  //find free inode
+  inode* ptr;
+  int in_num = -1;
+  for(int i=0;i<di->sb->inode_number;i++){
+    ptr = inodes+i;
+    if(ptr->valid==FALSE){
+      in_num=i;
+      break;
+    }
+  }
+  if(in_num==-1){
+    printf("%s\n",NO_ENOUGH_INDOE_SPACE_ERROR);
+    return FALSE;
+  }
+  
+  //add inode for the file
+  ptr->valid=TRUE;
+  *(ptr->name)='\0';
+  strcpy(ptr->name, file_name);
+  ptr->type = TYPE_FILE;
+  ptr->parent_directory=cur_dir;
+
+  ptr->size = content_len*sizeof(char);//plus one is the \0 end content symbol
+  update_size(ptr->size,cur_dir,di);//update size infomation
+  
+  //add to parent node
+  add_inode_pointer(in_num, di, cur_dir);
+
+  ptr->direct[0]=-1;
+  ptr->indirect=-1;
+  
+  write_inode_to_disk(di,in_num);
+
+  //write file data to the disk
+  int block_offset = SIZE_SUPERBLOCK+
+    SIZE_TABLE_UNIT*di->sb->block_number+
+    SIZE_INODE*di->sb->inode_number;
+  FILE* fp = fopen(di->disk_name,"rb+");
+  int number_need_block = (ptr->size)/SIZE_BLOCK+((ptr->size)%SIZE_BLOCK==0? 0:1);
+  for(int i=0;i<number_need_block;i++){
+    int block_number=-1;
+    //find free block
+    for(int k=0;k<di->sb->block_number;k++){
+      if(di->block_table[k]==FALSE){
+	block_number = k;
+	break;
+      }
+    }
+    if(block_number==-1){
+      printf("%s\n",NO_ENOGH_BLOCK_SPEACE_ERROR);
+      //TODO: recovery
+      ptr->valid=FALSE;
+      update_size(-(ptr->size),cur_dir,di);
+      set_inode_pointer(in_num, -3, cur_dir, di);
+      write_inode_to_disk(di, in_num);
+      return FALSE;
+    }
+    //update block table
+    di->block_table[block_number]=TRUE;
+    write_table_to_disk(di, block_number, TRUE);
+    //write to inode
+    add_inode_pointer(block_number, di, in_num);
+    //write data to file
+    int offset = block_offset+SIZE_BLOCK*block_number;
+    fseek(fp, offset, SEEK_SET);
+    int size = (i==number_need_block-1 ? ptr->size%SIZE_BLOCK:SIZE_BLOCK);
+    fwrite(content+i*SIZE_BLOCK, size, 1, fp);
+  }
+  fclose(fp);
+  return TRUE;
+}
+
+//can read file, directory, disk, only file return content, others return information
+int read(char* file_name,filesystem* fs){
+  //check if it's root directory
+  if(!fs->current_disk && fs->current_directory==-1){
+    printf("%s\n",FILE_NOT_FOUND_ERROR);
+    return FALSE;
+  }
+  int aim = find_aim(fs->current_directory, file_name, fs->current_disk);
+  if(aim==-1){
+    printf("%s\n",FILE_NOT_FOUND_ERROR);
+    return FALSE;
+  }
+  inode* in = fs->current_disk->inodes+aim;
+  if(in->type==TYPE_DIRECTORY){
+    printf("%s\n",FILE_NOT_FOUND_ERROR);
+    return FALSE;
+  }
+
+  FILE* fp = fopen(fs->current_disk->disk_name,"rb");
+  int block_offset = SIZE_SUPERBLOCK+
+    SIZE_TABLE_UNIT*fs->current_disk->sb->block_number+
+    SIZE_INODE*fs->current_disk->sb->inode_number; 
+  int size = in->size;
+  char* buffer = (char*)malloc(size+1);
+  buffer[0]='\0';
+  int block_number = size/SIZE_BLOCK+(size%SIZE_BLOCK==0? 0:1);
+  //number of block smaller than NUMBER_DIRECT_POINTER
+  if(block_number<=NUMBER_DIRECT_POINTER){
+    for(int i=0;i<block_number;i++){
+      int block_pos = in->direct[i];
+      int offset = block_offset+block_pos*SIZE_BLOCK;
+      int read_size = (i==block_number-1 ? size%SIZE_BLOCK:SIZE_BLOCK);
+      fread(buffer+SIZE_BLOCK*i, read_size, 1, fp);
+    }
+    fclose(fp);
+    buffer[size] = '\0';
+    printf("%s\n",buffer);
+    
+    return TRUE;
+  }
+
+  //read direct pointer
+  for(int i=0;i<NUMBER_DIRECT_POINTER;i++){
+    int block_pos = in->direct[i];
+    int offset = block_offset+block_pos*SIZE_BLOCK;
+    int read_size = (i==block_number-1 ? size%SIZE_BLOCK:SIZE_BLOCK);
+    fread(buffer+SIZE_BLOCK*i, read_size, 1, fp);
+  }
+  
+  //read indirect pointer
+  for(int i=0;i<block_number-NUMBER_DIRECT_POINTER;i++){
+    int block_pos=-1;
+    int indirect_offset = block_offset + (in->indirect)*SIZE_BLOCK+i*sizeof(int); 
+    fseek(fp, indirect_offset, SEEK_SET);
+    fread(&block_pos, sizeof(int), 1, fp);
+    int read_size =
+      (i==block_number-NUMBER_DIRECT_POINTER-1 ? size%SIZE_BLOCK:SIZE_BLOCK);
+    
+    int offset = block_offset+block_pos*SIZE_BLOCK;
+    fseek(fp, offset, SEEK_SET);
+    fread(buffer+SIZE_BLOCK*(i+5), read_size, 1, fp);
+  }
+  fclose(fp);
+  buffer[size]='\0';
+  printf("%s\n",buffer);
+  return TRUE;
+}
 
 void ls(filesystem* fs){
   printf("\n%-30s%-15s%-15s\n","NAME","TYPE","SIZE");
@@ -248,6 +416,7 @@ void write_inode_to_disk(disk* di, int position){
   fwrite(di->inodes+position, sizeof(struct inode), 1, fp);
   fclose(fp);
 }
+
 void set_inode_pointer(int cur_value, int set_value,int position, disk* di){
   //direct pointer
   int* pt;
@@ -296,6 +465,7 @@ void set_inode_pointer(int cur_value, int set_value,int position, disk* di){
   }
 
 }
+
 int rm(char* path,filesystem* fs){
   //first get list
   path_list* pl = get_path_list(path);
@@ -584,6 +754,7 @@ int mkdir(char* directory_name,filesystem* fs){
   printf("%s\n",NO_ENOUGH_INDOE_SPACE_ERROR);
   return FALSE;
 }
+
 char* get_path(disk* di, int pos){
   if(!di && pos==-1){
     return "/";
@@ -608,6 +779,7 @@ char* get_path(disk* di, int pos){
   return new_path;
 
 }
+
 //find all file or directory under current directory use recursive descent
 void find(char* name,int dir,disk* di, filesystem* fs){
   if(fs->current_directory==dir){

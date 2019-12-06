@@ -56,6 +56,7 @@
 #define DISK_NAME_NOT_FOUND_ERROR "ERROR: DISK NAME NOT FOUND"
 #define DELETE_DISK_FAIL_ERROR "ERROR: DELETE DISK FAILED"
 #define PATH_NOT_FOUND_ERROR "ERROR: PATH NOT FOUND"
+#define FILE_NOT_FOUND_ERROR "ERROR: FILE NAME NOT FOUND"
 #define NAME_ALREADY_EXIST_ERROR "ERROR: NAME ALREADY EXISTS"
 #define NO_ENOUGH_INDOE_SPACE_ERROR "ERROR: NO ENOUGH INDOE SPACE"
 #define NO_ENOGH_BLOCK_SPEACE_ERROR "ERROR: NO ENOUGH BLOCK SPACE"
@@ -164,5 +165,6 @@ position* search_position(path_list* pl, filesystem* fs);
 void set_inode_pointer(int cur_value, int set_value, int position, disk* di);
 
 void write_inode_to_disk(disk* di,int position);
-int write_file_to_disk(disk* di,inode* in);
+int add_inode_pointer(int value, disk* di, int pos);
+void write_table_to_disk(disk* di, int pos, int valid);
 #endif
