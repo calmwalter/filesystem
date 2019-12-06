@@ -107,7 +107,7 @@ typedef struct filesystem
   int (*rm)(char*,struct filesystem*);//rm the file(file_path)
   int (*mv)(char*,char *,struct filesystem*);//move a file to another place(file_path,dest_file_path)
   int (*mkdir)(char*,struct filesystem*);//make a directory in current directory(directory_name)
-  void (*find)(char*,int,struct filesystem*);//find the file or directory under current directory or child directory recursively(file or directory name)
+  void (*find)(char*,int,disk*,struct filesystem*);//find the file or directory under current directory or child directory recursively(file or directory name)
   int (*cd)(char*,struct filesystem*);//go to the directory
   
   //operation to manage disk
@@ -129,7 +129,7 @@ int paste(filesystem* fs);
 int rm(char* file_path,filesystem* fs);
 int mv(char* file_path, char* dest_file_path,filesystem* fs);
 int mkdir(char* directory_name,filesystem* fs);
-void find(char* name, int cur_dir,filesystem* fs);
+void find(char* name, int cur_dir,disk* di,filesystem* fs);
 int cd(char* path,filesystem* fs);
 
 

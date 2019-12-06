@@ -60,12 +60,14 @@ int main(int argc, char **argv){
   fs.mkdir("cascadia",&fs);
   fs.mkdir("calm",&fs);
   fs.mkdir("walter",&fs);
-  fs.cd("/hello/calm",&fs);
+  fs.cd("/hello/walter",&fs);
   fs.mkdir("walter",&fs);
   fs.mkdir("sam",&fs);
   fs.mkdir("kola",&fs);
   printf("%d\n",fs.current_directory);
   printf("%s\n",get_path(fs.current_disk,fs.current_directory));
   fs.ls(&fs);
+  fs.cd("/",&fs);
+  fs.find("walter",fs.current_directory,fs.current_disk,&fs);
   return 0;
 }

@@ -36,16 +36,20 @@ void ls(filesystem* fs){
     long offset = block_offset+SIZE_BLOCK*(in->indirect);
 
     fseek(fp,offset,SEEK_CUR);
-    int in_num = 0;
-    while(in_num!=-1){
+    int in_num = -1;
+    while(1){
       fread(&in_num, sizeof(int), 1, fp);
       if(in_num == -2){
         fread(&in_num, sizeof(int), 1, fp);
         offset = block_offset+SIZE_BLOCK*(in_num-1);
         fread(&in_num, offset, 1, fp);
-        if(in_num==-1){
+
+      }
+      if(in_num==-3){
+        continue;
+      }
+      if(in_num==-1){
           return;
-        }
       }
       aim = di->inodes+in_num;
       printf("%-30s%-15d%-15d\n",aim->name,aim->type,aim->size);
@@ -77,18 +81,23 @@ int find_aim(int cur_dir,char* aim_name,disk* di){
     long offset = block_offset+SIZE_BLOCK*(in->indirect);
 
     fseek(fp,offset,SEEK_SET);
-    int in_num = 0;
-    while(in_num!=-1){
+    int in_num = -1;
+    while(1){
       fread(&in_num, sizeof(int), 1, fp);
+
       if(in_num == -2){
-	fread(&in_num, sizeof(int), 1, fp);
-	offset = block_offset+SIZE_BLOCK*(in_num);
-	fseek(fp, offset, SEEK_SET);
-	fread(&in_num, sizeof(int), 1, fp);
-	if(in_num==-1){
-	  return -1;
-	}
+        fread(&in_num, sizeof(int), 1, fp);
+        offset = block_offset+SIZE_BLOCK*(in_num);
+        fseek(fp, offset, SEEK_SET);
+        fread(&in_num, sizeof(int), 1, fp);
+
       }
+      if(in_num==-3){
+        continue;
+      }
+      if(in_num==-1){
+	      return -1;
+	    }
       aim = di->inodes+in_num;
       if(!strcmp(aim->name,aim_name)){
 	return in_num;
@@ -261,18 +270,22 @@ void set_inode_pointer(int cur_value, int set_value,int position, disk* di){
     FILE* fp = fopen(di->disk_name,"rb+");
     fseek(fp, offset, SEEK_SET);
 
-    int in_num = 0;
-    while(in_num!=-1){
+    int in_num = -1;
+    while(1){
       fread(&in_num, sizeof(int), 1, fp);
+
       if(in_num == -2){
-	fread(&in_num, sizeof(int), 1, fp);
-	offset = block_offset+SIZE_BLOCK*(in_num);
-	fseek(fp, offset, SEEK_SET);
-	fread(&in_num, sizeof(int), 1, fp);
-	if(in_num==-1){
-	  return;
-	}
+        fread(&in_num, sizeof(int), 1, fp);
+        offset = block_offset+SIZE_BLOCK*(in_num);
+        fseek(fp, offset, SEEK_SET);
+        fread(&in_num, sizeof(int), 1, fp);
       }
+      if(in_num==-3){
+        continue;
+      }
+      if(in_num==-1){
+	      return;
+	    }
       if(in_num==cur_value){
 	fseek(fp, -sizeof(int), SEEK_CUR);
 	fwrite(&set_value, sizeof(int), 1, fp);
@@ -345,8 +358,8 @@ int add_inode_pointer(int value, disk* di, int pos){
       SIZE_INODE*(di->sb->inode_number);
     long offset = block_offset + SIZE_BLOCK*(in->indirect);
     fseek(fp, offset, SEEK_SET);
-    int in_num=0;
-    while(in_num!=-1){
+    int in_num=-1;
+    while(1){
       fread(&in_num, sizeof(int), 1, fp);
       if(in_num==-2){
 	      fread(&in_num, sizeof(int), 1, fp);
@@ -516,8 +529,8 @@ int mkdir(char* directory_name,filesystem* fs){
     long offset = block_offset+SIZE_BLOCK*(cur_in->indirect);
     FILE* fp = fopen(cur_di->disk_name,"rb");
     fseek(fp, offset,SEEK_SET);
-    int aim_dir=0;
-    while(aim_dir!=END_BLOCK){
+    int aim_dir=-1;
+    while(1){
       fread(&aim_dir, sizeof(int), 1, fp);
       if(aim_dir == NEXT_BLOCK){
         aim_dir = fread(&aim_dir, sizeof(int), 1, fp);
@@ -526,9 +539,10 @@ int mkdir(char* directory_name,filesystem* fs){
         fp = fopen(cur_di->disk_name,"rb");
         fseek(fp, offset, SEEK_SET);
         aim_dir = fread(&aim_dir, sizeof(int), 1, fp);
-        if(aim_dir == END_BLOCK){
-          break;
-        }
+
+      }
+      if(aim_dir == END_BLOCK){
+        break;
       }
       if(aim_dir == BLOCK_POSITION_NULL){
 	      continue;
@@ -595,10 +609,26 @@ char* get_path(disk* di, int pos){
 
 }
 //find all file or directory under current directory use recursive descent
-void find(char* name,int cur_dir,filesystem* fs){
+void find(char* name,int dir,disk* di, filesystem* fs){
+  if(fs->current_directory==dir){
+    printf("\n%-30s%-15s%-15s%-50s\n","NAME","TYPE","SIZE","PATH");
+    for (int i = 0; i < 110; i++)
+    {
+      printf("-");
+    }
+    printf("\n");
+  }
+  if(!di && dir==-1){
+    disk* pt=fs->disks;
+    while (pt)
+    {
+      find(name,0,pt,fs);
+      pt=pt->next_disk;
+    }
+    return;
+  }
   //find direct pointer
-  disk* di = fs->current_disk;
-  inode* in = di->inodes+cur_dir;
+  inode* in = di->inodes+dir;
   inode* aim;
   for(int i=0;i<NUMBER_DIRECT_POINTER;i++){
     if(*(in->direct+i)==-1){
@@ -608,16 +638,17 @@ void find(char* name,int cur_dir,filesystem* fs){
       continue;
     }
     aim = di->inodes+(*(in->direct+i));
-    if(aim->name==name){
+    if(!strcmp(aim->name,name)){
       //TODO: find file path
       char* file_path = get_path(di,*(in->direct+i));
-      printf("%s\t%d\t%d\t%s\n",aim->name,aim->type,aim->size,file_path);
+      printf("%-30s%-15d%-15d%-50s\n",aim->name,aim->type,aim->size,file_path);
       free(file_path);
     }
     if(aim->type==TYPE_DIRECTORY){
-      find(name,*(in->direct+i),fs);
+      find(name,*(in->direct+i),di,fs);
     }
   }
+  if(in->indirect==-1){return;}
   //find indirect pointer
   FILE* fp = fopen(di->disk_name,"rb");
   long block_offset = SIZE_SUPERBLOCK+
@@ -627,29 +658,29 @@ void find(char* name,int cur_dir,filesystem* fs){
   long offset = block_offset+SIZE_BLOCK*(in->indirect);
   fseek(fp,offset,SEEK_SET);
 
-  int in_num = 0;
-  while(in_num!=-1){
+  int in_num = -1;
+  while(1){
     fread(&in_num, sizeof(int), 1, fp);
-    if(in_num == -3){
-      continue;
-    }
     if(in_num == -2){
       fread(&in_num, sizeof(int), 1, fp);
       offset = block_offset+SIZE_BLOCK*in_num;
       fseek(fp,offset,SEEK_SET);
       fread(&in_num, sizeof(int), 1, fp);
-      if(in_num==-1){
-	return;
-      }
+    }
+    if(in_num == -3){
+      continue;
+    }
+    if(in_num == -1){
+      return;
     }
     aim = di->inodes+in_num;
-    if(aim->name==name){
+    if(!strcmp(aim->name,name)){
       char* file_path = get_path(di,in_num);
-      printf("%s\t%d\t%d\t%s\n",aim->name,aim->type,aim->size,file_path);
+      printf("%-30s%-15d%-15d%-50s\n",aim->name,aim->type,aim->size,file_path);
       free(file_path);
     }
     if(aim->type==TYPE_DIRECTORY){
-      find(name,in_num,fs);
+      find(name,in_num,di,fs);
     }
   }
   return;
@@ -688,20 +719,22 @@ int find_dir(int cur_dir,char* aim_dir_name,disk* di){
   long offset = block_offset+SIZE_BLOCK*(in->indirect);
 
   fseek(fp,offset,SEEK_SET);
-  int in_num = 0;
-  while(in_num!=-1){
+  int in_num = -1;
+  while(1){
     fread(&in_num, sizeof(int), 1, fp);
-    if(in_num==-3){
-      continue;
-    }
+
     if(in_num == -2){
       fread(&in_num, sizeof(int), 1, fp);
       offset = block_offset+SIZE_BLOCK*in_num;
       fseek(fp, offset, SEEK_SET);
       fread(&in_num, offset, 1, fp);
-      if(in_num==-1){
-	return -1;
-      }
+      
+    }
+        if(in_num==-3){
+      continue;
+    }
+    if(in_num==-1){
+	    return -1;
     }
     aim = di->inodes+in_num;
     if(aim->name==aim_dir_name && aim->type==TYPE_DIRECTORY){
