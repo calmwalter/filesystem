@@ -9,9 +9,9 @@
 void ls(filesystem* fs){
   printf("\n%-30s%-15s%-15s\n","NAME","TYPE","SIZE");
   for (int i = 0; i < 60; i++)
-  {
-    printf("-");
-  }
+    {
+      printf("-");
+    }
   printf("\n");
   
   //find direct pointer
@@ -49,7 +49,7 @@ void ls(filesystem* fs){
         continue;
       }
       if(in_num==-1){
-          return;
+	return;
       }
       aim = di->inodes+in_num;
       printf("%-30s%-15d%-15d\n",aim->name,aim->type,aim->size);
@@ -96,8 +96,8 @@ int find_aim(int cur_dir,char* aim_name,disk* di){
         continue;
       }
       if(in_num==-1){
-	      return -1;
-	    }
+	return -1;
+      }
       aim = di->inodes+in_num;
       if(!strcmp(aim->name,aim_name)){
 	return in_num;
@@ -193,13 +193,13 @@ position* search_position(path_list* pl, filesystem* fs){
       return NULL;
     }
     if (dl_len==1)
-    {
-      position* pos;
-      while(!(pos = (position*)malloc(sizeof(struct position))));
-      pos->di = di;
-      pos->position = 0;
-      return pos;
-    }
+      {
+	position* pos;
+	while(!(pos = (position*)malloc(sizeof(struct position))));
+	pos->di = di;
+	pos->position = 0;
+	return pos;
+      }
     cur_dir = 0;
     i=1;
   }
@@ -284,8 +284,8 @@ void set_inode_pointer(int cur_value, int set_value,int position, disk* di){
         continue;
       }
       if(in_num==-1){
-	      return;
-	    }
+	return;
+      }
       if(in_num==cur_value){
 	fseek(fp, -sizeof(int), SEEK_CUR);
 	fwrite(&set_value, sizeof(int), 1, fp);
@@ -339,14 +339,14 @@ int add_inode_pointer(int value, disk* di, int pos){
       return TRUE;
     }
     if (*(in->direct+i)==END_BLOCK)
-    {
-      if(i!=NUMBER_DIRECT_POINTER-1){
-        *(in->direct+i+1)=-1;
+      {
+	if(i!=NUMBER_DIRECT_POINTER-1){
+	  *(in->direct+i+1)=-1;
+	}
+	*(in->direct+i) = value;
+	write_inode_to_disk(di, pos);
+	return TRUE;
       }
-      *(in->direct+i) = value;
-      write_inode_to_disk(di, pos);
-      return TRUE;
-    }
     
   }
   //find indirect
@@ -362,7 +362,7 @@ int add_inode_pointer(int value, disk* di, int pos){
     while(1){
       fread(&in_num, sizeof(int), 1, fp);
       if(in_num==-2){
-	      fread(&in_num, sizeof(int), 1, fp);
+	fread(&in_num, sizeof(int), 1, fp);
         offset = block_offset+in_num*SIZE_BLOCK;
         fseek(fp, offset, SEEK_SET);
         fread(&in_num, sizeof(int), 1, fp);
@@ -492,10 +492,10 @@ int mv(char* file_path, char* dest_file_path,filesystem* fs){
 
 int mkdir(char* directory_name,filesystem* fs){
   if (!fs->current_disk && fs->current_directory==-1)
-  {
-    printf("CAN'T CREATE FILE OR DIRECTORY IN ROOT DIRECTORY\n");
-    return FALSE;
-  }
+    {
+      printf("CAN'T CREATE FILE OR DIRECTORY IN ROOT DIRECTORY\n");
+      return FALSE;
+    }
   
   //check if the name already exist
   disk* cur_di = fs->current_disk;
@@ -545,13 +545,13 @@ int mkdir(char* directory_name,filesystem* fs){
         break;
       }
       if(aim_dir == BLOCK_POSITION_NULL){
-	      continue;
+	continue;
       }
       aim = in+aim_dir;
       if(!strcmp(aim->name,directory_name)){
-	    printf("%s\n",NAME_ALREADY_EXIST_ERROR);
-	    fclose(fp);
-	    return FALSE;
+	printf("%s\n",NAME_ALREADY_EXIST_ERROR);
+	fclose(fp);
+	return FALSE;
       }
     }
     fclose(fp);
@@ -613,18 +613,18 @@ void find(char* name,int dir,disk* di, filesystem* fs){
   if(fs->current_directory==dir){
     printf("\n%-30s%-15s%-15s%-50s\n","NAME","TYPE","SIZE","PATH");
     for (int i = 0; i < 110; i++)
-    {
-      printf("-");
-    }
+      {
+	printf("-");
+      }
     printf("\n");
   }
   if(!di && dir==-1){
     disk* pt=fs->disks;
     while (pt)
-    {
-      find(name,0,pt,fs);
-      pt=pt->next_disk;
-    }
+      {
+	find(name,0,pt,fs);
+	pt=pt->next_disk;
+      }
     return;
   }
   //find direct pointer
@@ -730,11 +730,11 @@ int find_dir(int cur_dir,char* aim_dir_name,disk* di){
       fread(&in_num, offset, 1, fp);
       
     }
-        if(in_num==-3){
+    if(in_num==-3){
       continue;
     }
     if(in_num==-1){
-	    return -1;
+      return -1;
     }
     aim = di->inodes+in_num;
     if(aim->name==aim_dir_name && aim->type==TYPE_DIRECTORY){
@@ -865,9 +865,9 @@ int unmount(char* disk_name,filesystem* fs){
   while(dp){
     if(!strcmp(dp->disk_name,disk_name)){
       if(!dpt){
-	      fs->disks=dp->next_disk;
+	fs->disks=dp->next_disk;
       }else{
-	      dpt->next_disk = dp->next_disk;
+	dpt->next_disk = dp->next_disk;
       }
       free_disk(dp);
       return TRUE;
@@ -994,36 +994,36 @@ int delete(char* disk_name,filesystem* fs){
 }
 
 int init(filesystem* fs){
-    //init attributes
-    fs->disks=NULL;
-    fs->number_disk = 0;//the number of disk
-    fs->current_directory=-1;//means the directory is /dev
-    fs->current_disk=NULL;//this means we are now at the root node
-    fs->buffer_inode=-1;//the pasted file's inode
-    fs->buffer_disk=NULL;//the pasted file's disk
+  //init attributes
+  fs->disks=NULL;
+  fs->number_disk = 0;//the number of disk
+  fs->current_directory=-1;//means the directory is /dev
+  fs->current_disk=NULL;//this means we are now at the root node
+  fs->buffer_inode=-1;//the pasted file's inode
+  fs->buffer_disk=NULL;//the pasted file's disk
 
-    //init the inner function of filesystem
-    fs->write = write;
-    fs->read = read;
-    fs->ls = ls;
-    fs->cp = cp;
-    fs->paste = paste;
-    fs->rm = rm;
-    fs->mv = mv;
-    fs->mkdir = mkdir;
-    fs->find = find;
-    fs->cd = cd;
+  //init the inner function of filesystem
+  fs->write = write;
+  fs->read = read;
+  fs->ls = ls;
+  fs->cp = cp;
+  fs->paste = paste;
+  fs->rm = rm;
+  fs->mv = mv;
+  fs->mkdir = mkdir;
+  fs->find = find;
+  fs->cd = cd;
 
-    fs->mount = mount;
-    fs->unmount = unmount;
-    fs->create = create;
-    fs->format = format;
-    fs->delete = delete;
-    fs->list_disks = list_disks;
+  fs->mount = mount;
+  fs->unmount = unmount;
+  fs->create = create;
+  fs->format = format;
+  fs->delete = delete;
+  fs->list_disks = list_disks;
 
-    fs->init = init;
-    return TRUE;
-  }
+  fs->init = init;
+  return TRUE;
+}
 
 void list_disks(filesystem* fs){
   disk* di = fs->disks;
