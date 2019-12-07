@@ -160,26 +160,30 @@ void list_disks(struct filesystem* fs);
 int init(filesystem* fs);
 
 //tools
-disk* find_disk(char* disk_name, filesystem* fs);
-int find_aim(int cur_dir, char* aim_name, disk* di);
-int find_dir(int cur_dir,char* aim_dir_name,disk* di);
+disk* __find_disk(char* disk_name, filesystem* fs);
+int __find_aim(int cur_dir, char* aim_name, disk* di);
+int __find_dir(int cur_dir,char* aim_dir_name,disk* di);
+
 
 typedef struct path_list{
   char** list;
   int len;
 }path_list;
-path_list* get_path_list(char* path);//remember to release the pointer
-char* get_path(disk* di, int pos);//get the path of the position
+
+path_list* __get_path_list(char* path);//remember to release the pointer
+char* __get_path(disk* di, int pos);//get the path of the position
+
 
 typedef struct position{
   disk* di;
   int position;
 }position;
-position* search_position(path_list* pl, filesystem* fs);
-//set the node state, -1 represent end,FALSE, -2 represent NEXT_BLOCK, -3 represent NULL pointer
-void set_inode_pointer(int cur_value, int set_value, int position, disk* di);
 
-void write_inode_to_disk(disk* di,int position);
-int add_inode_pointer(int value, disk* di, int pos);
-void write_table_to_disk(disk* di, int pos, int valid);
+position* __search_position(path_list* pl, filesystem* fs);
+//set the node state, -1 represent end,FALSE, -2 represent NEXT_BLOCK, -3 represent NULL pointer
+void __set_inode_pointer(int cur_value, int set_value, int position, disk* di);
+
+void __write_inode_to_disk(disk* di,int position);
+int __add_inode_pointer(int value, disk* di, int pos);
+void __write_table_to_disk(disk* di, int pos, int valid);
 #endif

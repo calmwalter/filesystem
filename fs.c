@@ -7,7 +7,7 @@
 void update_size(int size, int pos, disk* di){
   inode* in = di->inodes + pos;
   in->size+=size;
-  write_inode_to_disk(di, pos);
+  __write_inode_to_disk(di, pos);
   if(in->parent_directory!=-1){
     update_size(size, in->parent_directory, di);
   }
@@ -20,7 +20,7 @@ int write(char* file_name,char* content,filesystem* fs){
   }
 
   //find if the file already exist
-  int aim = find_aim(fs->current_directory, file_name, fs->current_disk);
+  int aim = __find_aim(fs->current_directory, file_name, fs->current_disk);
   if(aim!=-1){
     printf("%s\n",NAME_ALREADY_EXIST_ERROR);
     return FALSE;
@@ -79,12 +79,12 @@ int write(char* file_name,char* content,filesystem* fs){
   update_size(ptr->size,cur_dir,di);//update size infomation
 
   //add to parent node
-  add_inode_pointer(in_num, di, cur_dir);
+  __add_inode_pointer(in_num, di, cur_dir);
 
   ptr->direct[0]=-1;
   ptr->indirect=-1;
 
-  write_inode_to_disk(di,in_num);
+  __write_inode_to_disk(di,in_num);
 
   //write file data to the disk
   int block_offset = SIZE_SUPERBLOCK+
@@ -95,9 +95,9 @@ int write(char* file_name,char* content,filesystem* fs){
     int block_number=tmp[i];
     //update block table
     di->block_table[block_number]=TRUE;
-    write_table_to_disk(di, block_number, TRUE);
+    __write_table_to_disk(di, block_number, TRUE);
     //write to inode
-    add_inode_pointer(block_number, di, in_num);
+    __add_inode_pointer(block_number, di, in_num);
     //write data to file
     int offset = block_offset+SIZE_BLOCK*block_number;
     fseek(fp, offset, SEEK_SET);
@@ -115,7 +115,7 @@ int read(char* file_name,filesystem* fs){
     printf("%s\n",FILE_NOT_FOUND_ERROR);
     return FALSE;
   }
-  int aim = find_aim(fs->current_directory, file_name, fs->current_disk);
+  int aim = __find_aim(fs->current_directory, file_name, fs->current_disk);
   if(aim==-1){
     printf("%s\n",FILE_NOT_FOUND_ERROR);
     return FALSE;
@@ -234,7 +234,7 @@ void ls(filesystem* fs){
   printf("\n");
 }
 
-int find_aim(int cur_dir,char* aim_name,disk* di){
+int __find_aim(int cur_dir,char* aim_name,disk* di){
   //find direct pointer
   inode* in = di->inodes+cur_dir;
   inode* aim;
@@ -283,7 +283,7 @@ int find_aim(int cur_dir,char* aim_name,disk* di){
   return -1;
 }
 
-path_list* get_path_list(char* path){
+path_list* __get_path_list(char* path){
   //first get list
   char** dl=(char**)malloc(sizeof(char*));//directory list from path
   int dl_len=0;//len of dl
@@ -328,7 +328,7 @@ path_list* get_path_list(char* path){
   return pl;
 }
 
-position* search_position(path_list* pl, filesystem* fs){
+position* __search_position(path_list* pl, filesystem* fs){
 
   char** dl = pl->list;
   int dl_len = pl->len;
@@ -346,7 +346,7 @@ position* search_position(path_list* pl, filesystem* fs){
       return pos;
     }
 
-    di = find_disk(*(dl+1),fs);
+    di = __find_disk(*(dl+1),fs);
     if(!di){
       //printf("%s\n",PATH_NOT_FOUND_ERROR);
       return NULL;
@@ -363,7 +363,7 @@ position* search_position(path_list* pl, filesystem* fs){
     cur_dir = 0;
     i=2;
   }else if(fs->current_disk==NULL && fs->current_directory==-1){
-    di = find_disk(*dl,fs);
+    di = __find_disk(*dl,fs);
     if(!di){
       //printf("%s\n",PATH_NOT_FOUND_ERROR);
       return NULL;
@@ -381,13 +381,13 @@ position* search_position(path_list* pl, filesystem* fs){
   }
 
   for(;i<dl_len-1;i++){
-    cur_dir = find_dir(cur_dir,*(dl+i),di);//if find return the directory, else return -1
+    cur_dir = __find_dir(cur_dir,*(dl+i),di);//if find return the directory, else return -1
     if(cur_dir==-1){
       //printf("%s\n",PATH_NOT_FOUND_ERROR);
       return NULL;
     }
   }
-  int aim = find_aim(cur_dir, *(dl+dl_len-1), di);
+  int aim = __find_aim(cur_dir, *(dl+dl_len-1), di);
   if(aim==-1){
     //printf("%s\n",PATH_NOT_FOUND_ERROR);
     return NULL;
@@ -401,10 +401,10 @@ position* search_position(path_list* pl, filesystem* fs){
 
 int cp(char* path,filesystem* fs){
   //first get list
-  path_list* pl = get_path_list(path);
+  path_list* pl = __get_path_list(path);
 
   //find the aim
-  position* pos = search_position(pl, fs);
+  position* pos = __search_position(pl, fs);
   if(!pos){
     return FALSE;
   }
@@ -415,7 +415,7 @@ int cp(char* path,filesystem* fs){
 
 int paste(filesystem* fs){}
 
-void write_inode_to_disk(disk* di, int position){
+void __write_inode_to_disk(disk* di, int position){
   long inode_offset = SIZE_SUPERBLOCK+
     SIZE_TABLE_UNIT*(di->sb->block_number);
   long offset = inode_offset+SIZE_INODE*(position);
@@ -425,7 +425,7 @@ void write_inode_to_disk(disk* di, int position){
   fclose(fp);
 }
 
-void set_inode_pointer(int cur_value, int set_value,int position, disk* di){
+void __set_inode_pointer(int cur_value, int set_value,int position, disk* di){
   //direct pointer
   int* pt;
   for(int i=0;i<NUMBER_DIRECT_POINTER;i++){
@@ -476,10 +476,10 @@ void set_inode_pointer(int cur_value, int set_value,int position, disk* di){
 
 int rm(char* path,filesystem* fs){
   //first get list
-  path_list* pl = get_path_list(path);
+  path_list* pl = __get_path_list(path);
 
   //find the aim
-  position* pos = search_position(pl, fs);
+  position* pos = __search_position(pl, fs);
   if(!pos){
     return FALSE;
   }
@@ -489,15 +489,15 @@ int rm(char* path,filesystem* fs){
   (di->inodes+aim)->valid = FALSE;
   //delete the parent pointer
   int par_aim = (di->inodes+aim)->parent_directory;
-  set_inode_pointer(aim, -3, par_aim, di);
+  __set_inode_pointer(aim, -3, par_aim, di);
 
   //write to file
-  write_inode_to_disk(di, aim);
-  write_inode_to_disk(di, (di->inodes+aim)->parent_directory);
+  __write_inode_to_disk(di, aim);
+  __write_inode_to_disk(di, (di->inodes+aim)->parent_directory);
   return TRUE;
 }
 
-void write_table_to_disk(disk* di, int pos, int valid){
+void __write_table_to_disk(disk* di, int pos, int valid){
   FILE* fp = fopen(di->disk_name,"rb+");
   long offset = SIZE_SUPERBLOCK+SIZE_TABLE_UNIT*pos;
   fseek(fp, offset, SEEK_SET);
@@ -507,13 +507,13 @@ void write_table_to_disk(disk* di, int pos, int valid){
 }
 
 
-int add_inode_pointer(int value, disk* di, int pos){
+int __add_inode_pointer(int value, disk* di, int pos){
   inode* in = di->inodes+pos;
   //find direct
   for(int i=0;i<NUMBER_DIRECT_POINTER;i++){
     if(*(in->direct+i)==BLOCK_POSITION_NULL ){
       *(in->direct+i) = value;
-      write_inode_to_disk(di, pos);
+      __write_inode_to_disk(di, pos);
       return TRUE;
     }
     if (*(in->direct+i)==END_BLOCK)
@@ -522,7 +522,7 @@ int add_inode_pointer(int value, disk* di, int pos){
 	  *(in->direct+i+1)=-1;
 	}
 	*(in->direct+i) = value;
-	write_inode_to_disk(di, pos);
+	__write_inode_to_disk(di, pos);
 	return TRUE;
       }
 
@@ -562,7 +562,7 @@ int add_inode_pointer(int value, disk* di, int pos){
           for(int i=0;i<di->sb->block_number;i++){
             if(*(di->block_table+i)==FALSE){
               *(di->block_table+i)=TRUE;
-              write_table_to_disk(di,i,TRUE);
+              __write_table_to_disk(di,i,TRUE);
               tmp = i;
               break;
             }
@@ -606,7 +606,7 @@ int add_inode_pointer(int value, disk* di, int pos){
       if(*(di->block_table+i)==FALSE){
         *(di->block_table+i)=TRUE;
         (di->inodes+pos)->indirect = i;
-        write_table_to_disk(di,i,TRUE);
+        __write_table_to_disk(di,i,TRUE);
         tmp = i;
         break;
       }
@@ -628,24 +628,24 @@ int add_inode_pointer(int value, disk* di, int pos){
     fclose(fp);
   }
   //write to disk
-  write_inode_to_disk(di, pos);
+  __write_inode_to_disk(di, pos);
   return TRUE;
 }
 
 //TODO achieve multi disk operation
 int mv(char* file_path, char* dest_file_path,filesystem* fs){
   //get file path list
-  path_list* pl_aim = get_path_list(file_path);
+  path_list* pl_aim = __get_path_list(file_path);
   //get aim inode
-  position* pos_aim = search_position(pl_aim, fs);
+  position* pos_aim = __search_position(pl_aim, fs);
   if(!pos_aim){
     printf("%s\n",PATH_NOT_FOUND_ERROR);
     return FALSE;
   }
   //get dest path list
-  path_list* pl_dest = get_path_list(dest_file_path);
+  path_list* pl_dest = __get_path_list(dest_file_path);
   //get dest directory inode
-  position* pos_dest = search_position(pl_dest, fs);
+  position* pos_dest = __search_position(pl_dest, fs);
   if(!pos_dest || (pos_dest->di->inodes+pos_dest->position)->type == TYPE_FILE){
     printf("%s\n",PATH_NOT_FOUND_ERROR);
     return FALSE;
@@ -655,16 +655,16 @@ int mv(char* file_path, char* dest_file_path,filesystem* fs){
   inode* in_aim = pos_aim->di->inodes+pos_aim->position;
 
   //set the parent pointer to be -3
-  set_inode_pointer(pos_aim->position, BLOCK_POSITION_NULL, in_aim->parent_directory, pos_aim->di);
+  __set_inode_pointer(pos_aim->position, BLOCK_POSITION_NULL, in_aim->parent_directory, pos_aim->di);
   //change the parent pointer to the new one
   in_aim->parent_directory = pos_dest->position;
   //add the inode pointer to the new parent directory
-  add_inode_pointer(pos_aim->position, pos_dest->di, pos_dest->position);
+  __add_inode_pointer(pos_aim->position, pos_dest->di, pos_dest->position);
 
   //update three inodes to disk
-  write_inode_to_disk(pos_aim->di, pos_aim->position);
-  write_inode_to_disk(pos_aim->di, in_aim->parent_directory);
-  write_inode_to_disk(pos_dest->di, pos_dest->position);
+  __write_inode_to_disk(pos_aim->di, pos_aim->position);
+  __write_inode_to_disk(pos_aim->di, in_aim->parent_directory);
+  __write_inode_to_disk(pos_dest->di, pos_dest->position);
   return TRUE;
 }
 
@@ -750,11 +750,11 @@ int mkdir(char* directory_name,filesystem* fs){
       new_in->parent_directory = cur_dir;
       new_in->size=0;
       new_in->valid=TRUE;
-      add_inode_pointer(i,cur_di,cur_dir);//add to parent inode pointer
+      __add_inode_pointer(i,cur_di,cur_dir);//add to parent inode pointer
 
       //write to disk
-      write_inode_to_disk(cur_di, cur_dir);
-      write_inode_to_disk(cur_di, i);
+      __write_inode_to_disk(cur_di, cur_dir);
+      __write_inode_to_disk(cur_di, i);
       return TRUE;
     }
   }
@@ -763,7 +763,7 @@ int mkdir(char* directory_name,filesystem* fs){
   return FALSE;
 }
 
-char* get_path(disk* di, int pos){
+char* __get_path(disk* di, int pos){
   if(!di && pos==-1){
     return "/";
   }
@@ -776,7 +776,7 @@ char* get_path(disk* di, int pos){
     strcat(path, in->name);
     return path;
   }
-  char* path = get_path(di, in->parent_directory);
+  char* path = __get_path(di, in->parent_directory);
   int len = strlen(path)+strlen(in->name)+sizeof(char);
   char* new_path = (char*)malloc(sizeof(char)*(len+1));
   new_path[0]='\0';
@@ -820,7 +820,7 @@ void find(char* name,int dir,disk* di, filesystem* fs){
     aim = di->inodes+(*(in->direct+i));
     if(!strcmp(aim->name,name)){
       //TODO: find file path
-      char* file_path = get_path(di,*(in->direct+i));
+      char* file_path = __get_path(di,*(in->direct+i));
       printf("%-30s%-15d%-15d%-50s\n",aim->name,aim->type,aim->size,file_path);
       free(file_path);
     }
@@ -855,7 +855,7 @@ void find(char* name,int dir,disk* di, filesystem* fs){
     }
     aim = di->inodes+in_num;
     if(!strcmp(aim->name,name)){
-      char* file_path = get_path(di,in_num);
+      char* file_path = __get_path(di,in_num);
       printf("%-30s%-15d%-15d%-50s\n",aim->name,aim->type,aim->size,file_path);
       free(file_path);
     }
@@ -866,7 +866,7 @@ void find(char* name,int dir,disk* di, filesystem* fs){
   return;
 }
 
-disk* find_disk(char* disk_name,filesystem* fs){
+disk* __find_disk(char* disk_name,filesystem* fs){
   disk* di = fs->disks;
   while(di){
     if(!strcmp(di->disk_name, disk_name)){
@@ -877,7 +877,7 @@ disk* find_disk(char* disk_name,filesystem* fs){
   return NULL;
 }
 
-int find_dir(int cur_dir,char* aim_dir_name,disk* di){
+int __find_dir(int cur_dir,char* aim_dir_name,disk* di){
   //find direct pointer
   inode* in = di->inodes+cur_dir;
   inode* aim;
@@ -927,10 +927,10 @@ int find_dir(int cur_dir,char* aim_dir_name,disk* di){
 
 int cd(char* path,filesystem* fs){
   //first get list
-  path_list* pl = get_path_list(path);
+  path_list* pl = __get_path_list(path);
 
   //find the directory
-  position* pos = search_position(pl, fs);
+  position* pos = __search_position(pl, fs);
   if (!pos){
     printf("%s\n",PATH_NOT_FOUND_ERROR);
     return FALSE;
@@ -1147,7 +1147,7 @@ int create(char* disk_name,int size){
 
 
 int format(char* disk_name,filesystem* fs){
-  disk* di = find_disk(disk_name, fs);
+  disk* di = __find_disk(disk_name, fs);
   if(!di){
     printf("%s\n",DISK_NOT_MOUNT_ERROR);
     return FALSE;
@@ -1168,7 +1168,7 @@ int format(char* disk_name,filesystem* fs){
 
 
 int delete(char* disk_name,filesystem* fs){
-  if(find_disk(disk_name, fs)){
+  if(__find_disk(disk_name, fs)){
     unmount(disk_name, fs);
   }
 
