@@ -26,7 +26,7 @@ int main(){
     init(fs);
     getchar();
     while(1){
-      printf("%s@%s>",ac->name,get_path(fs->current_disk, fs->current_directory));
+      printf("%s@%s>",ac->name,__get_path(fs->current_disk, fs->current_directory));
       int len = 0;
       while(1){
         char a;
