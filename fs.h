@@ -184,6 +184,12 @@ position* __search_position(path_list* pl, filesystem* fs);
 void __set_inode_pointer(int cur_value, int set_value, int position, disk* di);
 
 void __write_inode_to_disk(disk* di,int position);
+
 int __add_inode_pointer(int value, disk* di, int pos);
+
 void __write_table_to_disk(disk* di, int pos, int valid);
+
+void __update_size(int size, int pos, disk* di);
+
+void __free_disk(disk* dp);
 #endif
