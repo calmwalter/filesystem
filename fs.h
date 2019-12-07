@@ -61,6 +61,20 @@
 #define NO_ENOUGH_INDOE_SPACE_ERROR "ERROR: NO ENOUGH INDOE SPACE"
 #define NO_ENOGH_BLOCK_SPEACE_ERROR "ERROR: NO ENOUGH BLOCK SPACE"
 
+//define authority
+#define ADMINISTRATOR 0
+#define USER 1
+
+//define account
+typedef struct account{
+  char name[30];
+  char password[30];
+  int authority;
+}account;
+account* verify(char* name,char* password);
+int useradd(char* name,char* password, int authority);
+
+
 //store the main infomation of the disk
 typedef struct superblock{
   int size;
@@ -99,6 +113,7 @@ typedef struct filesystem
   int current_directory;//current directory number
   disk* current_disk;//the disk we current use
   int buffer_inode;disk* buffer_disk;//buffer_inode point to the inode number,buffer_disk point to the disk number
+  account* user;//the user that loaded
   
   //operation to access disk
   int (*write)(char*,char*,struct filesystem*);//write to the file(file_path,content)
@@ -143,7 +158,6 @@ int delete(char* disk_name,filesystem* fs);
 void list_disks(struct filesystem* fs);
 
 int init(filesystem* fs);
-
 
 //tools
 disk* find_disk(char* disk_name, filesystem* fs);

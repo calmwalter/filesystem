@@ -179,6 +179,10 @@ int read(char* file_name,filesystem* fs){
 }
 
 void ls(filesystem* fs){
+  if (!fs->current_disk && fs->current_directory==-1){
+    return ;
+  }
+  
   printf("\n%-30s%-15s%-15s\n","NAME","TYPE","SIZE");
   for (int i = 0; i < 60; i++)
     {
