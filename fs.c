@@ -18,17 +18,17 @@ int write(char* file_name,char* content,filesystem* fs){
     printf("CAN'T WRITE FILE AT THE ROOT DIRECTORY\n");
     return FALSE;
   }
-  
+
   //find if the file already exist
   int aim = find_aim(fs->current_directory, file_name, fs->current_disk);
-  if(aim==-1){
+  if(aim!=-1){
     printf("%s\n",NAME_ALREADY_EXIST_ERROR);
     return FALSE;
   }
-  
+
   //calculate the size of the content
   int content_len = strlen(content);
-  
+
   //define variables
   disk* di = fs->current_disk;
   int cur_dir = fs->current_directory;
@@ -48,7 +48,26 @@ int write(char* file_name,char* content,filesystem* fs){
     printf("%s\n",NO_ENOUGH_INDOE_SPACE_ERROR);
     return FALSE;
   }
-  
+
+  //find free block
+  int number_need_block = (content_len*sizeof(char))/SIZE_BLOCK+
+    ((content_len*sizeof(char))%SIZE_BLOCK==0? 0:1);
+  int tmp[number_need_block];
+  int j=0;
+  for(int i=0;i<di->sb->block_number;i++){
+    if(di->block_table[i]==FALSE){
+      tmp[j++]=i;
+      if(j==number_need_block){
+	break;
+      }
+    }
+  }
+  if(j<number_need_block){
+    printf("%s\n",NO_ENOGH_BLOCK_SPEACE_ERROR);
+    return FALSE;
+  }
+
+
   //add inode for the file
   ptr->valid=TRUE;
   *(ptr->name)='\0';
@@ -58,13 +77,13 @@ int write(char* file_name,char* content,filesystem* fs){
 
   ptr->size = content_len*sizeof(char);//plus one is the \0 end content symbol
   update_size(ptr->size,cur_dir,di);//update size infomation
-  
+
   //add to parent node
   add_inode_pointer(in_num, di, cur_dir);
 
   ptr->direct[0]=-1;
   ptr->indirect=-1;
-  
+
   write_inode_to_disk(di,in_num);
 
   //write file data to the disk
@@ -72,25 +91,8 @@ int write(char* file_name,char* content,filesystem* fs){
     SIZE_TABLE_UNIT*di->sb->block_number+
     SIZE_INODE*di->sb->inode_number;
   FILE* fp = fopen(di->disk_name,"rb+");
-  int number_need_block = (ptr->size)/SIZE_BLOCK+((ptr->size)%SIZE_BLOCK==0? 0:1);
   for(int i=0;i<number_need_block;i++){
-    int block_number=-1;
-    //find free block
-    for(int k=0;k<di->sb->block_number;k++){
-      if(di->block_table[k]==FALSE){
-	block_number = k;
-	break;
-      }
-    }
-    if(block_number==-1){
-      printf("%s\n",NO_ENOGH_BLOCK_SPEACE_ERROR);
-      //TODO: recovery
-      ptr->valid=FALSE;
-      update_size(-(ptr->size),cur_dir,di);
-      set_inode_pointer(in_num, -3, cur_dir, di);
-      write_inode_to_disk(di, in_num);
-      return FALSE;
-    }
+    int block_number=tmp[i];
     //update block table
     di->block_table[block_number]=TRUE;
     write_table_to_disk(di, block_number, TRUE);
@@ -127,7 +129,7 @@ int read(char* file_name,filesystem* fs){
   FILE* fp = fopen(fs->current_disk->disk_name,"rb");
   int block_offset = SIZE_SUPERBLOCK+
     SIZE_TABLE_UNIT*fs->current_disk->sb->block_number+
-    SIZE_INODE*fs->current_disk->sb->inode_number; 
+    SIZE_INODE*fs->current_disk->sb->inode_number;
   int size = in->size;
   char* buffer = (char*)malloc(size+1);
   buffer[0]='\0';
@@ -138,12 +140,13 @@ int read(char* file_name,filesystem* fs){
       int block_pos = in->direct[i];
       int offset = block_offset+block_pos*SIZE_BLOCK;
       int read_size = (i==block_number-1 ? size%SIZE_BLOCK:SIZE_BLOCK);
+      fseek(fp, offset, SEEK_SET);
       fread(buffer+SIZE_BLOCK*i, read_size, 1, fp);
     }
     fclose(fp);
     buffer[size] = '\0';
     printf("%s\n",buffer);
-    
+
     return TRUE;
   }
 
@@ -152,18 +155,19 @@ int read(char* file_name,filesystem* fs){
     int block_pos = in->direct[i];
     int offset = block_offset+block_pos*SIZE_BLOCK;
     int read_size = (i==block_number-1 ? size%SIZE_BLOCK:SIZE_BLOCK);
+    fseek(fp, offset, SEEK_SET);
     fread(buffer+SIZE_BLOCK*i, read_size, 1, fp);
   }
-  
+
   //read indirect pointer
   for(int i=0;i<block_number-NUMBER_DIRECT_POINTER;i++){
     int block_pos=-1;
-    int indirect_offset = block_offset + (in->indirect)*SIZE_BLOCK+i*sizeof(int); 
+    int indirect_offset = block_offset + (in->indirect)*SIZE_BLOCK+i*sizeof(int);
     fseek(fp, indirect_offset, SEEK_SET);
     fread(&block_pos, sizeof(int), 1, fp);
     int read_size =
       (i==block_number-NUMBER_DIRECT_POINTER-1 ? size%SIZE_BLOCK:SIZE_BLOCK);
-    
+
     int offset = block_offset+block_pos*SIZE_BLOCK;
     fseek(fp, offset, SEEK_SET);
     fread(buffer+SIZE_BLOCK*(i+5), read_size, 1, fp);
@@ -181,7 +185,7 @@ void ls(filesystem* fs){
       printf("-");
     }
   printf("\n");
-  
+
   //find direct pointer
   disk* di = fs->current_disk;
   inode* in = di->inodes+fs->current_directory;
@@ -293,7 +297,7 @@ path_list* get_path_list(char* path){
     markl++;
     i++;
   }
-  
+
   for(;i<len;i++){
     if(path[i]=='/'){
       while(!(pt=(char**)realloc(dl, sizeof(char*)*(dl_len+1))));
@@ -321,7 +325,7 @@ path_list* get_path_list(char* path){
 }
 
 position* search_position(path_list* pl, filesystem* fs){
-  
+
   char** dl = pl->list;
   int dl_len = pl->len;
   //find the aim
@@ -337,7 +341,7 @@ position* search_position(path_list* pl, filesystem* fs){
       pos->position = -1;
       return pos;
     }
-    
+
     di = find_disk(*(dl+1),fs);
     if(!di){
       //printf("%s\n",PATH_NOT_FOUND_ERROR);
@@ -371,7 +375,7 @@ position* search_position(path_list* pl, filesystem* fs){
     cur_dir = 0;
     i=1;
   }
-  
+
   for(;i<dl_len-1;i++){
     cur_dir = find_dir(cur_dir,*(dl+i),di);//if find return the directory, else return -1
     if(cur_dir==-1){
@@ -494,7 +498,7 @@ void write_table_to_disk(disk* di, int pos, int valid){
   long offset = SIZE_SUPERBLOCK+SIZE_TABLE_UNIT*pos;
   fseek(fp, offset, SEEK_SET);
   int sc = fwrite(&valid, sizeof(int), 1, fp);
-  
+
   fclose(fp);
 }
 
@@ -517,7 +521,7 @@ int add_inode_pointer(int value, disk* di, int pos){
 	write_inode_to_disk(di, pos);
 	return TRUE;
       }
-    
+
   }
   //find indirect
   if(in->indirect!=-1){
@@ -666,7 +670,7 @@ int mkdir(char* directory_name,filesystem* fs){
       printf("CAN'T CREATE FILE OR DIRECTORY IN ROOT DIRECTORY\n");
       return FALSE;
     }
-  
+
   //check if the name already exist
   disk* cur_di = fs->current_disk;
   int cur_dir = fs->current_directory;
@@ -900,7 +904,7 @@ int find_dir(int cur_dir,char* aim_dir_name,disk* di){
       offset = block_offset+SIZE_BLOCK*in_num;
       fseek(fp, offset, SEEK_SET);
       fread(&in_num, offset, 1, fp);
-      
+
     }
     if(in_num==-3){
       continue;
@@ -1011,9 +1015,9 @@ int mount(char* disk_name,filesystem* fs){
   di->block_table = bt;
   di->next_disk = fs->disks;
   fs->disks = di;
-  
+
   fs->number_disk++;
-  printf("mount disk %s success\nused: %d/%d bytes\n",disk_name,sb->block_size,sb->block_number*SIZE_BLOCK);
+  printf("mount disk %s success\nused: %d/%d bytes\n",disk_name,di->inodes->size,sb->size);
   return TRUE;
 }
 void free_disk(disk* dp){
@@ -1074,9 +1078,10 @@ int create(char* disk_name,int size){
 
   //initialize the superblock
   superblock sb;
-  sb.inode_size = 0;
+  sb.size = size;
+  // sb.inode_size = 0;
   sb.inode_number = inode_number;
-  sb.block_size = 0;
+  // sb.block_size = 0;
   sb.block_number = block_number;
 
   //initialize the inode
@@ -1090,7 +1095,13 @@ int create(char* disk_name,int size){
     fclose(fp);
     return FALSE;
   }
+  //first initial the disk size
   fp = fopen(disk_name,"wb");
+  fseek(fp,size-1,SEEK_SET);
+  fputc(32, fp);
+  fclose(fp);
+  //then write to the disk
+  fp = fopen(disk_name,"rb+");
   fwrite(&sb,sizeof(sb),1,fp);
   int valid = FALSE;
   for(int i=0;i<block_number;i++){
@@ -1116,14 +1127,14 @@ int create(char* disk_name,int size){
   fputc(32, fp);
 
   fclose(fp);
-  long total_size = SIZE_SUPERBLOCK+
-    SIZE_INODE*inode_number+
-    block_number*(SIZE_BLOCK+SIZE_TABLE_UNIT);
+  // long total_size = SIZE_SUPERBLOCK+
+  //   SIZE_INODE*inode_number+
+  //   block_number*(SIZE_BLOCK+SIZE_TABLE_UNIT);
 
-  printf("create disk success\ntotal size: %ldbytes = %.1lfKB = %.1lfMB\n",
-	 total_size,
-	 (double)total_size/1024,
-	 (double)total_size/1024/1024
+  printf("create disk success\ntotal size: %ldB = %.1lfKB = %.1lfMB\n",
+	 size,
+	 (double)size/1024,
+	 (double)size/1024/1024
 	 );
 
   return TRUE;
@@ -1137,6 +1148,7 @@ int format(char* disk_name,filesystem* fs){
     printf("%s\n",DISK_NOT_MOUNT_ERROR);
     return FALSE;
   }
+
   int size = di->sb->block_number*SIZE_BLOCK+
     di->sb->inode_number*(SIZE_INODE+SIZE_TABLE_UNIT)+
     SIZE_SUPERBLOCK;

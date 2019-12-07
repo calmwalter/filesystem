@@ -69,5 +69,9 @@ int main(int argc, char **argv){
   fs.ls(&fs);
   fs.cd("/",&fs);
   fs.find("walter",fs.current_directory,fs.current_disk,&fs);
+  fs.cd("/hello/walter",&fs);
+  fs.write("html", "sjdghfefegafuerfjedbfaergfkrbfhdbvagfkuabedfhasdgfkurefudbfhjfgke", &fs);
+  fs.read("html", &fs);
+  
   return 0;
 }

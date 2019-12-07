@@ -34,7 +34,7 @@
 //define block size
 #define SIZE_BLOCK 1024
 //define superblock size
-#define SIZE_SUPERBLOCK 16
+#define SIZE_SUPERBLOCK 12
 //define table size of each unit
 #define SIZE_TABLE_UNIT 4
 
@@ -63,9 +63,10 @@
 
 //store the main infomation of the disk
 typedef struct superblock{
-  int inode_size;//total used inode size
+  int size;
+  // int inode_size;//total used inode size
   int inode_number;//number of inodes
-  int block_size;//total used block size
+  // int block_size;//total used block size
   int block_number;//number of blocks
 }superblock;
 
