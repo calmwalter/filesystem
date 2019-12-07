@@ -7,7 +7,6 @@
 account* verify(char* name,char* password){
   char path[200]="./data/";
   strcat(path, name);
-  printf("%s\n",path);
   FILE* fp=fopen(path,"rb");
   if(!fp){
     return NULL;
@@ -26,7 +25,6 @@ account* verify(char* name,char* password){
 int useradd(char* name,char* password, int authority){
   char path[200]="./data/";
   strcat(path, name);
-  printf("%s\n",path);
   FILE* fp=fopen(path,"rb");
   if(!fp){
     fp=fopen(path,"wb");
