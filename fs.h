@@ -30,11 +30,11 @@
 
 //define the size, unit byte
 //define inode size
-#define SIZE_INODE 104
+#define SIZE_INODE sizeof(struct inode)
 //define block size
 #define SIZE_BLOCK 1024
 //define superblock size
-#define SIZE_SUPERBLOCK 12
+#define SIZE_SUPERBLOCK sizeof(struct superblock)
 //define table size of each unit
 #define SIZE_TABLE_UNIT 4
 

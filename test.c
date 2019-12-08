@@ -1,6 +1,6 @@
 #include"fs.h"
 #include<stdio.h>
-
+#include<string.h>
 
 int main(int argc, char **argv){
   /*
@@ -43,8 +43,14 @@ int main(int argc, char **argv){
   ////////////////////////////////////
 
   //test filesystem
+  account ac;
+  ac.authority=ADMINISTRATOR;
+  strcpy(ac.name,"root");
+  strcpy(ac.password,"root");
   filesystem fs;
   init(&fs);
+  fs.user=&ac;
+
   fs.create("hello", 1024*1024*128,&fs);
   fs.mount("hello", &fs);
   //fs.list_disks(&fs);
@@ -59,21 +65,23 @@ int main(int argc, char **argv){
   fs.mkdir("champion",&fs);
   fs.mkdir("cascadia",&fs);
   fs.mkdir("calm",&fs);
-  fs.mkdir("walter",&fs);
-  fs.mkdir("dota",&fs);
-
-  fs.cd("/hello/walter",&fs);
-  fs.mkdir("walter",&fs);
-  fs.mkdir("sam",&fs);
-  fs.mkdir("kola",&fs);
-  printf("%d\n",fs.current_directory);
-  printf("%s\n",__get_path(fs.current_disk,fs.current_directory));
+  fs.write("dotaeee","fsdfsd",&fs);
   fs.ls(&fs);
-  fs.cd("/",&fs);
-  fs.find("walter",fs.current_directory,fs.current_disk,&fs);
-  fs.cd("/hello/walter",&fs);
-  fs.write("html", "sjdghfefegafuerfjedbfaergfkrbfhdbvagfkuabedfhasdgfkurefudbfhjfgke", &fs);
-  fs.read("html", &fs);
+  // fs.mkdir("walter",&fs);
+  // fs.mkdir("dota",&fs);
+
+  // fs.cd("/hello/walter",&fs);
+  // fs.mkdir("walter",&fs);
+  // fs.mkdir("sam",&fs);
+  // fs.mkdir("kola",&fs);
+  // printf("%d\n",fs.current_directory);
+  // printf("%s\n",__get_path(fs.current_disk,fs.current_directory));
+  // fs.ls(&fs);
+  // fs.cd("/",&fs);
+  // fs.find("walter",fs.current_directory,fs.current_disk,&fs);
+  // fs.cd("/hello/walter",&fs);
+  // fs.write("html", "sjdghfefegafuerfjedbfaergfkrbfhdbvagfkuabedfhasdgfkurefudbfhjfgke", &fs);
+  // fs.read("html", &fs);
   
   return 0;
 }

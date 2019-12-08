@@ -44,23 +44,6 @@ int write(char* file_name,char* content,filesystem* fs){
     return FALSE;
   }
 
-  //find free block
-  int number_need_block = (content_len*sizeof(char))/SIZE_BLOCK+
-    ((content_len*sizeof(char))%SIZE_BLOCK==0? 0:1);
-  int tmp[number_need_block];
-  int j=0;
-  for(int i=0;i<di->sb->block_number;i++){
-    if(di->block_table[i]==FALSE){
-      tmp[j++]=i;
-      if(j==number_need_block){
-	break;
-      }
-    }
-  }
-  if(j<number_need_block){
-    printf("%s\n",NO_ENOGH_BLOCK_SPEACE_ERROR);
-    return FALSE;
-  }
 
 
   //add inode for the file
@@ -82,6 +65,24 @@ int write(char* file_name,char* content,filesystem* fs){
   ptr->indirect=-1;
 
   __write_inode_to_disk(di,in_num);
+
+  //find free block
+  int number_need_block = (content_len*sizeof(char))/SIZE_BLOCK+
+    ((content_len*sizeof(char))%SIZE_BLOCK==0? 0:1);
+  int tmp[number_need_block];
+  int j=0;
+  for(int i=0;i<di->sb->block_number;i++){
+    if(di->block_table[i]==FALSE){
+      tmp[j++]=i;
+      if(j==number_need_block){
+	break;
+      }
+    }
+  }
+  if(j<number_need_block){
+    printf("%s\n",NO_ENOGH_BLOCK_SPEACE_ERROR);
+    return FALSE;
+  }
 
   //write file data to the disk
   int block_offset = SIZE_SUPERBLOCK+
@@ -212,7 +213,7 @@ void ls(filesystem* fs){
 
     long offset = block_offset+SIZE_BLOCK*(in->indirect);
 
-    fseek(fp,offset,SEEK_CUR);
+    fseek(fp,offset,SEEK_SET);
     int in_num = -1;
     while(1){
       fread(&in_num, sizeof(int), 1, fp);
