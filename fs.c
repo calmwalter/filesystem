@@ -200,6 +200,9 @@ void ls(filesystem* fs){
     if(*(in->direct+i)==-1){
       return;
     }
+    if(*(in->direct+i)==-3){
+      continue;
+    }
     aim = di->inodes+(*(in->direct+i));
     printf("%-30s%-15d%-15d%-30s\n",aim->name,aim->type,aim->size,aim->owner);
   }
@@ -341,24 +344,25 @@ int mkdir(char* directory_name,filesystem* fs){
   inode* in = cur_di->inodes;
   inode* cur_in = in+cur_dir;
   inode* aim;
-  int i=0;
 
   //->check direct file
-  while(cur_in->direct[i]!=-1 && i<NUMBER_DIRECT_POINTER){
+  for(int i=0;i<NUMBER_DIRECT_POINTER;i++){
     if(cur_in->direct[i]==-3){
       continue;
+    }
+    if(cur_in->direct[i]==-1){
+      break;
     }
     aim = in+cur_in->direct[i];
     if(!strcmp(aim->name,directory_name)){
       printf("%s\n",NAME_ALREADY_EXIST_ERROR);
       return FALSE;
     }
-    i++;
-  }
 
-  if(cur_in->direct[i]!=-1 && cur_in->indirect!=-1){
+  }
+  if(cur_in->indirect!=-1){
     //->check indirect file
-    i = 0;
+    
     //-->read disk get aim pointer
     long block_offset = SIZE_SUPERBLOCK+
       SIZE_TABLE_UNIT*(cur_di->sb->block_number)+

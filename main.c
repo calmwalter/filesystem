@@ -207,8 +207,8 @@ void command(char* cmd){
     }
     mv(ca->args[1],ca->args[2],fs);
     return;
-  }  
-
+  }
+  printf("ERROR: COMMAND NOT DEFINED\n");
 
 
 }

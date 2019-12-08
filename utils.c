@@ -27,6 +27,9 @@ int __find_aim(int cur_dir,char* aim_name,disk* di){
     if(*(in->direct+i)==-1){
       return -1;
     }
+    if(*(in->direct+i)==-3){
+      continue;
+    }
     aim = di->inodes+(*(in->direct+i));
     if(!strcmp(aim->name,aim_name)){
       return *(in->direct+i);
