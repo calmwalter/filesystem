@@ -492,7 +492,7 @@ void __free_disk(disk* dp){
 int __check_permission(inode* in,filesystem* fs){
 
   // only the administrator and permit user and can operate file can be accessed
-  if(!((fs->user->authority==ADMINISTRATOR)||(!strcmp(in->owner,fs->user->name)))){
+  if(!((in->parent_directory==-1)||(fs->user->authority==ADMINISTRATOR)||(!strcmp(in->owner,fs->user->name)))){
     return FALSE;
   }
   return TRUE;

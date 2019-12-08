@@ -334,10 +334,10 @@ int mkdir(char* directory_name,filesystem* fs){
       printf("CAN'T CREATE FILE OR DIRECTORY IN ROOT DIRECTORY\n");
       return FALSE;
     }
-  // if(!__check_permission(fs->current_disk->inodes+fs->current_directory,fs)){
-  //   printf("%s\n",PERMISSION_DENIED_ERROR);
-  //   return FALSE;
-  // }
+  if(!__check_permission(fs->current_disk->inodes+fs->current_directory,fs)){
+    printf("%s\n",PERMISSION_DENIED_ERROR);
+    return FALSE;
+  }
   //check if the name already exist
   disk* cur_di = fs->current_disk;
   int cur_dir = fs->current_directory;
