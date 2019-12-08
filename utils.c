@@ -337,6 +337,14 @@ int __add_inode_pointer(int value, disk* di, int pos){
           fclose(fp);
           return TRUE;
         }
+	else{
+	  fseek(fp, ftell(fp)-sizeof(int), SEEK_SET);
+	  fwrite(&value, sizeof(int), 1, fp);
+	  int tmp = -1;
+	  fwrite(&tmp,sizeof(int),1,fp);
+	  fclose(fp);
+	  return TRUE;
+	}
       }
       if(in_num==BLOCK_POSITION_NULL){
         //write to it
@@ -476,4 +484,13 @@ void __free_disk(disk* dp){
   free(dp->sb);
   free(dp->inodes);
   free(dp);
+}
+
+int __check_permission(inode* in,filesystem* fs){
+
+  // only the administrator and permit user and can operate file can be accessed
+  if(!((fs->user->authority==ADMINISTRATOR)||(!strcmp(in->owner,fs->user->name)))){
+    return FALSE;
+  }
+  return TRUE;
 }

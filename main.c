@@ -24,6 +24,7 @@ int main(){
     }
     //intialize file system
     init(fs);
+    fs->user=ac;
     getchar();
     while(1){
       printf("%s@%s>",ac->name,__get_path(fs->current_disk, fs->current_directory));
@@ -103,7 +104,7 @@ void command(char* cmd){
       printf("ARGUMENTS ERROR\ncreate <disk name> <size>\n");
       return;
     }
-    create(ca->args[1],atoi(ca->args[2]));
+    create(ca->args[1],atoi(ca->args[2]),fs);
     return;
   }
   //list_disks

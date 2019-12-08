@@ -30,7 +30,7 @@
 
 //define the size, unit byte
 //define inode size
-#define SIZE_INODE 72
+#define SIZE_INODE 104
 //define block size
 #define SIZE_BLOCK 1024
 //define superblock size
@@ -42,6 +42,11 @@
 #define END_BLOCK -1
 #define NEXT_BLOCK -2
 #define BLOCK_POSITION_NULL -3
+
+//define permission
+#define READ_ONLY 0
+#define WRITE_ONLY 1
+#define READ_AND_WRITE 2
 
 //define error
 #define DISK_NAME_EXIST_ERROR "ERROR: DISK NAME ALREADY EXISTS"
@@ -60,7 +65,7 @@
 #define NAME_ALREADY_EXIST_ERROR "ERROR: NAME ALREADY EXISTS"
 #define NO_ENOUGH_INDOE_SPACE_ERROR "ERROR: NO ENOUGH INDOE SPACE"
 #define NO_ENOGH_BLOCK_SPEACE_ERROR "ERROR: NO ENOUGH BLOCK SPACE"
-
+#define PERMISSION_DENIED_ERROR "ERROR: PERMISSION DENIED"
 //define authority
 #define ADMINISTRATOR 0
 #define USER 1
@@ -94,6 +99,8 @@ typedef struct inode{
   int valid;//if the block has been used
   int direct[NUMBER_DIRECT_POINTER];//pointer point to the data(file) or inode(directory) directly
   int indirect;//point to block where store the pointer point to the data or inode, end with -1, end with -2, read one more for next block.
+  char owner[30];//the owner who create the file
+  // int permission;//permission read only, write only, read and write.
 }inode;
 
 //the disk that store the disk infomation:name,superblock,inode,and the next disk link
@@ -130,7 +137,7 @@ typedef struct filesystem
   //operation to manage disk
   int (*mount)(char*,struct filesystem*);//mount the disk(disk_name)
   int (*unmount)(char*,struct filesystem*);//unmount the disk(disk_name)
-  int (*create)(char*,int);//create the disk(disk_name,size)
+  int (*create)(char*,int,struct filesystem*);//create the disk(disk_name,size)
   int (*format)(char*,struct filesystem*);//format the disk(disk_name)
   int (*delete)(char*,struct filesystem*);//delete the disk(disk_name)
   void (*list_disks)(struct filesystem*);//list disks
@@ -152,7 +159,7 @@ int cd(char* path,filesystem* fs);
 
 int mount(char* disk_name,filesystem* fs);
 int unmount(char* disk_name,filesystem* fs);
-int create(char* disk_name,int size);
+int create(char* disk_name,int size,filesystem* fs);
 int format(char* disk_name,filesystem* fs);
 int delete(char* disk_name,filesystem* fs);
 void list_disks(struct filesystem* fs);
@@ -192,4 +199,6 @@ void __write_table_to_disk(disk* di, int pos, int valid);
 void __update_size(int size, int pos, disk* di);
 
 void __free_disk(disk* dp);
+
+int __check_permission(inode* in, filesystem* fs);
 #endif

@@ -10,7 +10,10 @@ int write(char* file_name,char* content,filesystem* fs){
     printf("CAN'T WRITE FILE AT THE ROOT DIRECTORY\n");
     return FALSE;
   }
-
+  if(!__check_permission(fs->current_disk->inodes+fs->current_directory,fs)){
+    printf("%s\n",PERMISSION_DENIED_ERROR);
+    return FALSE;
+  }
   //find if the file already exist
   int aim = __find_aim(fs->current_directory, file_name, fs->current_disk);
   if(aim!=-1){
@@ -66,6 +69,8 @@ int write(char* file_name,char* content,filesystem* fs){
   strcpy(ptr->name, file_name);
   ptr->type = TYPE_FILE;
   ptr->parent_directory=cur_dir;
+  *(ptr->owner)='\0';
+  strcpy(ptr->owner,fs->user->name);
 
   ptr->size = content_len*sizeof(char);//plus one is the \0 end content symbol
   __update_size(ptr->size,cur_dir,di);//update size infomation
@@ -115,6 +120,10 @@ int read(char* file_name,filesystem* fs){
   inode* in = fs->current_disk->inodes+aim;
   if(in->type==TYPE_DIRECTORY){
     printf("%s\n",FILE_NOT_FOUND_ERROR);
+    return FALSE;
+  }
+  if(!__check_permission(in,fs)){
+    printf("%s\n",PERMISSION_DENIED_ERROR);
     return FALSE;
   }
 
@@ -175,8 +184,8 @@ void ls(filesystem* fs){
     return ;
   }
   
-  printf("\n%-30s%-15s%-15s\n","NAME","TYPE","SIZE");
-  for (int i = 0; i < 60; i++)
+  printf("\n%-30s%-15s%-15s%-30s\n","NAME","TYPE","SIZE","OWNER");
+  for (int i = 0; i < 90; i++)
     {
       printf("-");
     }
@@ -191,7 +200,7 @@ void ls(filesystem* fs){
       return;
     }
     aim = di->inodes+(*(in->direct+i));
-    printf("%-30s%-15d%-15d\n",aim->name,aim->type,aim->size);
+    printf("%-30s%-15d%-15d%-30s\n",aim->name,aim->type,aim->size,aim->owner);
   }
 
   //find indirect pointer
@@ -220,7 +229,7 @@ void ls(filesystem* fs){
 	return;
       }
       aim = di->inodes+in_num;
-      printf("%-30s%-15d%-15d\n",aim->name,aim->type,aim->size);
+      printf("%-30s%-15d%-15d%-30s\n",aim->name,aim->type,aim->size,aim->owner);
     }
   }
   printf("\n");
@@ -257,6 +266,11 @@ int rm(char* path,filesystem* fs){
   }
   disk* di = pos->di;
   int aim = pos->position;
+  if (!__check_permission(di->inodes+aim,fs)){
+    printf("%s\n",PERMISSION_DENIED_ERROR);
+    return FALSE;
+  }
+  
   //set invalid
   (di->inodes+aim)->valid = FALSE;
   //delete the parent pointer
@@ -278,6 +292,10 @@ int mv(char* file_path, char* dest_file_path,filesystem* fs){
   position* pos_aim = __search_position(pl_aim, fs);
   if(!pos_aim){
     printf("%s\n",PATH_NOT_FOUND_ERROR);
+    return FALSE;
+  }
+  if (!__check_permission(pos_aim->di->inodes+pos_aim->position,fs)){
+    printf("%s\n",PERMISSION_DENIED_ERROR);
     return FALSE;
   }
   //get dest path list
@@ -312,7 +330,10 @@ int mkdir(char* directory_name,filesystem* fs){
       printf("CAN'T CREATE FILE OR DIRECTORY IN ROOT DIRECTORY\n");
       return FALSE;
     }
-
+  // if(!__check_permission(fs->current_disk->inodes+fs->current_directory,fs)){
+  //   printf("%s\n",PERMISSION_DENIED_ERROR);
+  //   return FALSE;
+  // }
   //check if the name already exist
   disk* cur_di = fs->current_disk;
   int cur_dir = fs->current_directory;
@@ -387,6 +408,7 @@ int mkdir(char* directory_name,filesystem* fs){
       strcpy(new_in->name,directory_name);
       new_in->parent_directory = cur_dir;
       new_in->size=0;
+      strcpy(new_in->owner,fs->user->name);
       new_in->valid=TRUE;
       __add_inode_pointer(i,cur_di,cur_dir);//add to parent inode pointer
 
@@ -612,7 +634,7 @@ int unmount(char* disk_name,filesystem* fs){
 
 
 //TODO: rewrite this part
-int create(char* disk_name,int size){
+int create(char* disk_name,int size,filesystem* fs){
   /*
     the unit is bytes.
     we have the derivation:
@@ -698,6 +720,10 @@ int create(char* disk_name,int size){
 
 
 int format(char* disk_name,filesystem* fs){
+  if(fs->user->authority!=ADMINISTRATOR){
+    printf("%s\n",PERMISSION_DENIED_ERROR);
+    return FALSE;
+  }
   disk* di = __find_disk(disk_name, fs);
   if(!di){
     printf("%s\n",DISK_NOT_MOUNT_ERROR);
@@ -710,7 +736,7 @@ int format(char* disk_name,filesystem* fs){
   if(!delete(disk_name, fs)){
     return FALSE;
   }
-  if(!create(disk_name,size)){
+  if(!create(disk_name,size,fs)){
     return FALSE;
   }
   printf("format disk %s success\n",disk_name);
@@ -740,7 +766,6 @@ int init(filesystem* fs){
   fs->current_disk=NULL;//this means we are now at the root node
   fs->buffer_inode=-1;//the pasted file's inode
   fs->buffer_disk=NULL;//the pasted file's disk
-
   //init the inner function of filesystem
   fs->write = write;
   fs->read = read;

@@ -45,7 +45,7 @@ int main(int argc, char **argv){
   //test filesystem
   filesystem fs;
   init(&fs);
-  fs.create("hello", 1024*1024*128);
+  fs.create("hello", 1024*1024*128,&fs);
   fs.mount("hello", &fs);
   //fs.list_disks(&fs);
   //fs.unmount("hello",&fs);
@@ -60,6 +60,8 @@ int main(int argc, char **argv){
   fs.mkdir("cascadia",&fs);
   fs.mkdir("calm",&fs);
   fs.mkdir("walter",&fs);
+  fs.mkdir("dota",&fs);
+
   fs.cd("/hello/walter",&fs);
   fs.mkdir("walter",&fs);
   fs.mkdir("sam",&fs);
