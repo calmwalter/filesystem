@@ -58,10 +58,23 @@
    
 * 运行结果
 ** 运行环境
-   Linux 系统，内核5.0以上
-   需要gcc，及相关环境
-   window10系统
-   配置要求MinGW in windows 并配置环境变量
+   1. Linux系统
+      安装gcc编译环境
+      磁盘空间大于128MB(对于本程序大多数合理的磁盘来说)
+   2. window10系统
+      配置要求MinGW in windows 
+      设置系统环境变量到path/to/mingw/bin
+      磁盘空间大于128mb
+   3. 编译方式
+      #+begin_src
+      gcc main.c fs.c account.c utils.c  
+      #+end_src
+   4. 运行
+      #+begin_src
+      ./a.out //linux系统
+      a.exe //windows系统
+      #+end_src
+
 ** 服务模式
 
 ** 运行结果
