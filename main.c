@@ -187,7 +187,7 @@ void command(char* cmd){
       printf("ARGUMENTS ERROR\npaste\n");
       return;
     }
-    paste(fs);
+    paste(fs,fs->buffer_inode,fs->current_directory);
     return;
   }
   //rm

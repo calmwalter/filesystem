@@ -127,13 +127,13 @@ typedef struct filesystem
   int (*read)(char*,struct filesystem*);//read the file(file_path)
   void (*ls)(struct filesystem*);//list the files and directories in current directory(file_path)
   int (*cp)(char*,struct filesystem*);//copy a file, put it to the buffer(file_path)
-  int (*paste)(struct filesystem*);//paste the file in buffer to current directory
+  void (*paste)(struct filesystem*,int,int);//paste the file in buffer to current directory
   int (*rm)(char*,struct filesystem*);//rm the file(file_path)
   int (*mv)(char*,char *,struct filesystem*);//move a file to another place(file_path,dest_file_path)
   int (*mkdir)(char*,struct filesystem*);//make a directory in current directory(directory_name)
   void (*find)(char*,int,disk*,struct filesystem*);//find the file or directory under current directory or child directory recursively(file or directory name)
   int (*cd)(char*,struct filesystem*);//go to the directory
-  
+
   //operation to manage disk
   int (*mount)(char*,struct filesystem*);//mount the disk(disk_name)
   int (*unmount)(char*,struct filesystem*);//unmount the disk(disk_name)
@@ -149,7 +149,7 @@ int write(char* file_path,char* content,filesystem* fs);
 int read(char* file_path,filesystem* fs);
 void ls(filesystem* fs);
 int cp(char* file_path,filesystem* fs);
-int paste(filesystem* fs);
+void paste(filesystem* fs,int paste_inode, int aim_dir);
 int rm(char* file_path,filesystem* fs);
 int mv(char* file_path, char* dest_file_path,filesystem* fs);
 int mkdir(char* directory_name,filesystem* fs);
@@ -201,4 +201,8 @@ void __update_size(int size, int pos, disk* di);
 void __free_disk(disk* dp);
 
 int __check_permission(inode* in, filesystem* fs);
+
+int __mkdir(char* directory_name, filesystem* fs, disk* current_disk, int current_directory);
+
+char* __read(disk* current_disk,int aim, filesystem* fs);
 #endif

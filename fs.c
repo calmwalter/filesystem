@@ -255,7 +255,102 @@ int cp(char* path,filesystem* fs){
   return TRUE;
 }
 
-int paste(filesystem* fs){}
+//TODO use recursive method to paste the file or directory copied which stored in the buffer
+// here paste_inode is the inode we need to paste
+// aim_dir is the inode where we want to paste
+void paste(filesystem* fs, int paste_inode, int aim_dir){
+  // if no content in buffer
+  if (!fs->buffer_disk && fs->buffer_inode==-1){
+    return ;
+  }
+  // paste the
+  // if paste inode is a file
+  if((fs->buffer_disk->inodes+paste_inode)->type == TYPE_FILE){
+    // use write to write it to the aim_dir then return
+    // TODO new __read function let it have return value
+    char* content = __read(fs->buffer_disk,paste_inode,fs);
+    if(content){
+      write((fs->buffer_disk->inodes+paste_inode)->name,content,fs);
+      free(content);
+    }else{
+      printf("ERROR.\n");
+    }
+    return ;
+  }
+  // if paste inode is a directory
+    // first use mkdir to write it to the aim_dir
+  __mkdir((fs->buffer_disk->inodes+paste_inode)->name,fs,fs->buffer_disk,aim_dir);
+
+    // then for every inode under paste_inode
+      // use paste to paste the inode to the new aim dir(paste_inode)
+      // like: paste(fs, new_paste_inode, paste_inode)
+
+  //find direct pointer
+  disk* di = fs->buffer_disk;
+  inode* in = di->inodes+paste_inode;
+  inode* aim;
+  for(int i=0;i<NUMBER_DIRECT_POINTER;i++){
+    if(*(in->direct+i)==-1){
+      return;
+    }
+    if(*(in->direct+i)==-3){
+      continue;
+    }
+    aim = di->inodes+(*(in->direct+i));
+    if(aim->type==TYPE_FILE){
+      char* content = __read(fs->buffer_disk,*(in->direct+i),fs);
+      if(content){
+        write(aim->name,content,fs);
+        free(content);
+      }else{
+        printf("ERROR.\n");
+      }
+    }else{
+      paste(fs,*(in->direct+i),paste_inode);
+    }
+  }
+
+  //find indirect pointer
+  if(in->indirect!=-1){
+    FILE* fp = fopen(di->disk_name,"rb");
+    long block_offset = SIZE_SUPERBLOCK+
+      SIZE_TABLE_UNIT*(di->sb->block_number)+
+      SIZE_INODE*(di->sb->inode_number);
+
+    long offset = block_offset+SIZE_BLOCK*(in->indirect);
+
+    fseek(fp,offset,SEEK_SET);
+    int in_num = -1;
+    while(1){
+      fread(&in_num, sizeof(int), 1, fp);
+      if(in_num == -2){
+        fread(&in_num, sizeof(int), 1, fp);
+        offset = block_offset+SIZE_BLOCK*(in_num-1);
+        fread(&in_num, offset, 1, fp);
+
+      }
+      if(in_num==-3){
+        continue;
+      }
+      if(in_num==-1){
+	      return;
+      }
+      aim = di->inodes+in_num;
+      if(aim->type==TYPE_FILE){
+        char* content = __read(fs->buffer_disk,in_num,fs);
+        if(content){
+          write(aim->name,content,fs);
+          free(content);
+        }else{
+          printf("ERROR.\n"); 
+        }
+      }else{
+        paste(fs,in_num,paste_inode);
+      }
+    }
+  }
+}
+
 
 
 
@@ -362,7 +457,6 @@ int mkdir(char* directory_name,filesystem* fs){
   }
   if(cur_in->indirect!=-1){
     //->check indirect file
-    
     //-->read disk get aim pointer
     long block_offset = SIZE_SUPERBLOCK+
       SIZE_TABLE_UNIT*(cur_di->sb->block_number)+
