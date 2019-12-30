@@ -75,7 +75,7 @@ int write(char* file_name,char* content,filesystem* fs){
     if(di->block_table[i]==FALSE){
       tmp[j++]=i;
       if(j==number_need_block){
-	break;
+        break;
       }
     }
   }
@@ -230,7 +230,7 @@ void ls(filesystem* fs){
         continue;
       }
       if(in_num==-1){
-	return;
+        return;
       }
       aim = di->inodes+in_num;
       printf("%-30s%-15d%-15d%-30s\n",aim->name,aim->type,aim->size,aim->owner);
@@ -278,12 +278,12 @@ void paste(filesystem* fs, int paste_inode, int aim_dir){
     return ;
   }
   // if paste inode is a directory
-    // first use mkdir to write it to the aim_dir
+  // first use mkdir to write it to the aim_dir
   __mkdir((fs->buffer_disk->inodes+paste_inode)->name,fs,fs->buffer_disk,aim_dir);
 
-    // then for every inode under paste_inode
-      // use paste to paste the inode to the new aim dir(paste_inode)
-      // like: paste(fs, new_paste_inode, paste_inode)
+  // then for every inode under paste_inode
+  // use paste to paste the inode to the new aim dir(paste_inode)
+  // like: paste(fs, new_paste_inode, paste_inode)
 
   //find direct pointer
   disk* di = fs->buffer_disk;
@@ -481,13 +481,13 @@ int mkdir(char* directory_name,filesystem* fs){
         break;
       }
       if(aim_dir == BLOCK_POSITION_NULL){
-	continue;
+        continue;
       }
       aim = in+aim_dir;
       if(!strcmp(aim->name,directory_name)){
-	printf("%s\n",NAME_ALREADY_EXIST_ERROR);
-	fclose(fp);
-	return FALSE;
+        printf("%s\n",NAME_ALREADY_EXIST_ERROR);
+        fclose(fp);
+        return FALSE;
       }
     }
     fclose(fp);
@@ -530,7 +530,7 @@ void find(char* name,int dir,disk* di, filesystem* fs){
     printf("\n%-30s%-15s%-15s%-50s\n","NAME","TYPE","SIZE","PATH");
     for (int i = 0; i < 110; i++)
       {
-	printf("-");
+        printf("-");
       }
     printf("\n");
   }
@@ -538,8 +538,8 @@ void find(char* name,int dir,disk* di, filesystem* fs){
     disk* pt=fs->disks;
     while (pt)
       {
-	find(name,0,pt,fs);
-	pt=pt->next_disk;
+        find(name,0,pt,fs);
+        pt=pt->next_disk;
       }
     return;
   }
@@ -717,9 +717,9 @@ int unmount(char* disk_name,filesystem* fs){
   while(dp){
     if(!strcmp(dp->disk_name,disk_name)){
       if(!dpt){
-	fs->disks=dp->next_disk;
+        fs->disks=dp->next_disk;
       }else{
-	dpt->next_disk = dp->next_disk;
+        dpt->next_disk = dp->next_disk;
       }
       __free_disk(dp);
       return TRUE;
@@ -808,10 +808,10 @@ int create(char* disk_name,int size,filesystem* fs){
   //   block_number*(SIZE_BLOCK+SIZE_TABLE_UNIT);
 
   printf("create disk success\ntotal size: %ldB = %.1lfKB = %.1lfMB\n",
-	 size,
-	 (double)size/1024,
-	 (double)size/1024/1024
-	 );
+         size,
+         (double)size/1024,
+         (double)size/1024/1024
+         );
 
   return TRUE;
 
